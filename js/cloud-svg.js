@@ -1,4 +1,5 @@
-// Cloud SVG template
+// cloud-svg.js - Contains only the SVG template for cloud patterns
+
 const cloudSVG = `
     <g class="cloud-group">
         <path class="cloud-stroke" d="M178.5,39.7c-2.9-0.8-4.6-2.2-5.9-4.9
@@ -46,31 +47,3 @@ const cloudSVG = `
             C172.3,68.5,167,66.4,161.6,66.4z"/>
     </g>
 `;
-
-// Cloud positions (x, y) for each group (5 clouds per group)
-const cloudPositions = [
-    // Group 1 positions
-    [{x: 1121.5, y: 983.9}, {x: 424.7, y: 633.9}, {x: 1121.5, y: 283.9}, 
-     {x: 76.4, y: 1333.9}, {x: 76.4, y: -66.1}],
-    // Group 2 positions
-    [{x: 773.1, y: 983.9}, {x: 76.4, y: 633.9}, {x: 773.1, y: 283.9}, 
-     {x: 424.7, y: 1333.9}, {x: 424.7, y: -66.1}],
-    // Group 3 positions
-    [{x: 424.7, y: 983.9}, {x: 1121.5, y: 633.9}, {x: 424.7, y: 283.9}, 
-     {x: 773.1, y: 1333.9}, {x: 773.1, y: -66.1}],
-    // Group 4 positions
-    [{x: 76.4, y: 983.9}, {x: 773.1, y: 633.9}, {x: 76.4, y: 283.9}, 
-     {x: 1121.5, y: 1333.9}, {x: 1121.5, y: -66.1}],
-    // Group 5 positions
-    [{x: 598.8, y: 1158.9}, {x: 948.7, y: 808.9}, {x: 248.9, y: 458.9}, 
-     {x: -101.1, y: 108.9}, {x: 1298.7, y: 108.9}],
-    // Group 6 positions
-    [{x: 1298.7, y: 1158.9}, {x: -101.1, y: 1158.9}, {x: 248.9, y: 808.9}, 
-     {x: 948.7, y: 458.9}, {x: 248.9, y: 108.9}],
-    // Group 7 positions
-    [{x: 948.7, y: 1158.9}, {x: -101.1, y: 808.9}, {x: 1298.7, y: 808.9}, 
-     {x: 598.8, y: 108.9}, {x: 598.8, y: 458.9}],
-    // Group 8 positions
-    [{x: 248.9, y: 1158.9}, {x: 598.8, y: 808.9}, {x: 1298.7, y: 458.9}, 
-     {x: -101.1, y: 458.9}, {x: 948.7, y: 108.9}]
-];

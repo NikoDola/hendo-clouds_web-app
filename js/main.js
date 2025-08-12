@@ -1,18 +1,75 @@
-// Original colors
-const originalColors = {
-    bgColor: '#1A171C',
-    g1Stroke: '#64BC46', g1Fill: '#4D9133',
-    g2Stroke: '#EDE829', g2Fill: '#ADA61E',
-    g3Stroke: '#8A8C87', g3Fill: '#18268C',
-    g4Stroke: '#DE4A4A', g4Fill: '#B53737',
-    g5Stroke: '#E54B9B', g5Fill: '#A52B71',
-    g6Stroke: '#414FA2', g6Fill: '#2A3C84',
-    g7Stroke: '#9F792C', g7Fill: '#725117',
-    g8Stroke: '#76B6E3', g8Fill: '#3D7191'
+// ====== VERSION CONFIGURATION ======
+const versions = {
+    "2": {
+        name: "2-Color (Chess)",
+        bgColor: '#1A171C', // Dark background matching your SVG
+        groups: [
+            { stroke: '#FFFFFF', fill: '#FFFFFF' }, // White
+            { stroke: '#020401', fill: '#020401' }  // Near black
+        ]
+    },
+    "4": {
+        name: "4-Color (Primary)",
+        bgColor: '#1A171C',
+        groups: [
+            { stroke: '#64BC46', fill: '#4D9133' }, // Green
+            { stroke: '#414FA2', fill: '#2A3C84' }, // Blue
+            { stroke: '#DE4A4A', fill: '#B53737' }, // Red
+            { stroke: '#EDE829', fill: '#FFA500' }  // Yellow/Orange
+        ]
+    },
+    "8": {
+        name: "8-Color (Full)",
+        bgColor: '#1A171C',
+        groups: [
+            { stroke: '#64BC46', fill: '#4D9133' },
+            { stroke: '#EDE829', fill: '#ADA61E' },
+            { stroke: '#8A8C87', fill: '#18268C' },
+            { stroke: '#DE4A4A', fill: '#B53737' },
+            { stroke: '#E54B9B', fill: '#A52B71' },
+            { stroke: '#414FA2', fill: '#2A3C84' },
+            { stroke: '#9F792C', fill: '#725117' },
+            { stroke: '#76B6E3', fill: '#3D7191' }
+        ]
+    }
 };
 
-// Current colors
-let currentColors = {...originalColors};
+// Original 8-group positions (used for ALL versions)
+const cloudPositions = [
+    // Group 1 (White in 2-color version)
+    [{x: 1121.5, y: 983.9}, {x: 424.7, y: 633.9}, {x: 1121.5, y: 283.9}, 
+     {x: 76.4, y: 1333.9}, {x: 76.4, y: -66.1}],
+    // Group 2 (Black in 2-color version)
+    [{x: 773.1, y: 983.9}, {x: 76.4, y: 633.9}, {x: 773.1, y: 283.9}, 
+     {x: 424.7, y: 1333.9}, {x: 424.7, y: -66.1}],
+    // Group 3 (White in 2-color version)
+    [{x: 424.7, y: 983.9}, {x: 1121.5, y: 633.9}, {x: 424.7, y: 283.9}, 
+     {x: 773.1, y: 1333.9}, {x: 773.1, y: -66.1}],
+    // Group 4 (Black in 2-color version)
+    [{x: 76.4, y: 983.9}, {x: 773.1, y: 633.9}, {x: 76.4, y: 283.9}, 
+     {x: 1121.5, y: 1333.9}, {x: 1121.5, y: -66.1}],
+    // Group 5 (White in 2-color version)
+    [{x: 598.8, y: 1158.9}, {x: 948.7, y: 808.9}, {x: 598.8, y: 458.9},, 
+     {x: -101.1, y: 108.9}, {x: 1298.7, y: 108.9}],
+    // Group 6 (Black in 2-color version)
+    [{x: 1298.7, y: 1158.9}, {x: -101.1, y: 1158.9}, {x: 248.9, y: 808.9}, 
+     {x: 948.7, y: 458.9}, {x: 248.9, y: 108.9}],
+    // Group 7 (White in 2-color version)
+    [{x: 948.7, y: 1158.9}, {x: -101.1, y: 808.9}, {x: 1298.7, y: 808.9}, 
+     {x: 598.8, y: 108.9},  {x: 248.9, y: 458.9}],
+    // Group 8 (Black in 2-color version)
+    [{x: 248.9, y: 1158.9}, {x: 598.8, y: 808.9}, {x: 1298.7, y: 458.9}, 
+     {x: -101.1, y: 458.9}, {x: 948.7, y: 108.9}]
+];
+
+// Specific color order for 2-color version (matches your SVG pattern)
+const twoColorOrder = [0, 1, 0, 1, 0, 1, 0, 1]; // 0 = white, 1 = black
+
+let currentVersion = "4"; // Default to 4-color version
+let currentColors = { 
+    bgColor: versions[currentVersion].bgColor,
+    groups: JSON.parse(JSON.stringify(versions[currentVersion].groups))
+};
 
 // Function to generate random color
 function getRandomColor() {
@@ -24,169 +81,212 @@ function getRandomColor() {
     return color;
 }
 
-// Function to create group controls HTML
+// ====== CORE FUNCTIONS ======
 function createGroupControls() {
     const container = document.getElementById('groupControls');
-    let html = '';
+    container.innerHTML = '';
     
-    for (let i = 1; i <= 8; i++) {
-        html += `
-            <div class="color-group">
-                <h3>G${i}</h3>
-                <div class="color-controls-row">
-                    <div class="color-control">
-                        <label>Fill</label>
-                        <input type="color" id="g${i}-fill" value="${currentColors[`g${i}Fill`]}">
-                    </div>
-                    <div class="color-control">
-                        <label>Stroke</label>
-                        <input type="color" id="g${i}-stroke" value="${currentColors[`g${i}Stroke`]}">
-                    </div>
+    currentColors.groups.forEach((group, i) => {
+        const groupElement = document.createElement('div');
+        groupElement.className = 'color-group';
+        groupElement.innerHTML = `
+            <h3>Group ${i+1}</h3>
+            <div class="color-controls-row">
+                <div class="color-control">
+                    <label>Fill</label>
+                    <input type="color" id="g${i+1}-fill" value="${group.fill}">
+                </div>
+                <div class="color-control">
+                    <label>Stroke</label>
+                    <input type="color" id="g${i+1}-stroke" value="${group.stroke}">
                 </div>
             </div>
         `;
-    }
-    
-    container.innerHTML = html;
+        container.appendChild(groupElement);
+    });
 }
 
-// Function to render all clouds
 function renderClouds() {
     const svg = document.getElementById('svg-preview');
+    if (!svg) return;
     
-    // Clear existing clouds (keep the background)
-    const existingClouds = svg.querySelectorAll('.cloud-group');
-    existingClouds.forEach(cloud => cloud.remove());
+    // Clear existing clouds
+    svg.innerHTML = '';
     
-    // Create clouds for each group
-    for (let group = 0; group < 8; group++) {
-        const groupPositions = cloudPositions[group];
-        const strokeColor = currentColors[`g${group+1}Stroke`];
-        const fillColor = currentColors[`g${group+1}Fill`];
-        
-        for (const pos of groupPositions) {
-            // Create a new cloud element
-            const cloudElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            cloudElement.innerHTML = cloudSVG;
-            cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
-            
-            // Set colors
-            const strokePath = cloudElement.querySelector('.cloud-stroke');
-            const fillPath = cloudElement.querySelector('.cloud-fill');
-            strokePath.setAttribute('fill', strokeColor);
-            fillPath.setAttribute('fill', fillColor);
-            
-            // Add to SVG
-            svg.appendChild(cloudElement);
-        }
-    }
+    // Add background
+    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.setAttribute('width', '1399.8');
+    bg.setAttribute('height', '1400');
+    bg.setAttribute('fill', currentColors.bgColor);
+    bg.id = 'bg';
+    svg.appendChild(bg);
     
-    // Update background color
-    document.getElementById('bg').setAttribute('fill', currentColors.bgColor);
-    
-    // Update color pickers to match current colors
+    // Update color picker
     document.getElementById('bg-fill').value = currentColors.bgColor;
+    
+    // Create clouds with proper color distribution
+    const colorGroups = currentColors.groups;
+    const colorCount = colorGroups.length;
+    
+    // For 2-color version: specific pattern matching your SVG
+    if (colorCount === 2) {
+        cloudPositions.forEach((groupPositions, index) => {
+            // Use the predefined order for 2-color version
+            const colorIndex = twoColorOrder[index];
+            const { stroke, fill } = colorGroups[colorIndex];
+            
+            groupPositions.forEach(pos => {
+                const cloudElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                cloudElement.innerHTML = cloudSVG;
+                cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+                
+                const paths = cloudElement.querySelectorAll('path');
+                paths[0].setAttribute('fill', stroke);
+                paths[1].setAttribute('fill', fill);
+                
+                svg.appendChild(cloudElement);
+            });
+        });
+    }
+    // For 4-color version: distributed pattern
+    else if (colorCount === 4) {
+        // Create a pattern where no two adjacent groups share colors
+        const colorOrder = [0, 1, 2, 3, 0, 2, 1, 3]; // Custom distribution
+        
+        cloudPositions.forEach((groupPositions, index) => {
+            const colorIndex = colorOrder[index % colorOrder.length];
+            const { stroke, fill } = colorGroups[colorIndex];
+            
+            groupPositions.forEach(pos => {
+                const cloudElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                cloudElement.innerHTML = cloudSVG;
+                cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+                
+                const paths = cloudElement.querySelectorAll('path');
+                paths[0].setAttribute('fill', stroke);
+                paths[1].setAttribute('fill', fill);
+                
+                svg.appendChild(cloudElement);
+            });
+        });
+    }
+    // For 8-color version: original pattern
+    else {
+        cloudPositions.forEach((groupPositions, index) => {
+            const { stroke, fill } = colorGroups[index];
+            
+            groupPositions.forEach(pos => {
+                const cloudElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                cloudElement.innerHTML = cloudSVG;
+                cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+                
+                const paths = cloudElement.querySelectorAll('path');
+                paths[0].setAttribute('fill', stroke);
+                paths[1].setAttribute('fill', fill);
+                
+                svg.appendChild(cloudElement);
+            });
+        });
+    }
 }
 
-// Function to randomize all colors
 function randomizeAllColors() {
     currentColors.bgColor = getRandomColor();
-    
-    for (let i = 1; i <= 8; i++) {
-        currentColors[`g${i}Fill`] = getRandomColor();
-        currentColors[`g${i}Stroke`] = getRandomColor();
-    }
+    currentColors.groups = currentColors.groups.map(() => ({
+        stroke: getRandomColor(),
+        fill: getRandomColor()
+    }));
     
     renderClouds();
     createGroupControls();
     setupEventListeners();
 }
 
-// Function to reset to original colors
 function resetColors() {
-    currentColors = {...originalColors};
+    currentColors = {
+        bgColor: versions[currentVersion].bgColor,
+        groups: JSON.parse(JSON.stringify(versions[currentVersion].groups))
+    };
     renderClouds();
     createGroupControls();
     setupEventListeners();
 }
 
-// Function to download SVG
+function changeVersion(version) {
+    currentVersion = version;
+    currentColors = {
+        bgColor: versions[version].bgColor,
+        groups: JSON.parse(JSON.stringify(versions[version].groups))
+    };
+    renderClouds();
+    createGroupControls();
+    setupEventListeners();
+}
+
 function downloadSVG() {
     const svgElement = document.getElementById('svg-preview');
-    
-    // Create a clone of the SVG element to avoid modifying the original
-    const clone = svgElement.cloneNode(true);
-    
-    // Add XML declaration and proper SVG namespace
     const serializer = new XMLSerializer();
-    let svgContent = serializer.serializeToString(clone);
+    let svgContent = serializer.serializeToString(svgElement);
     
-    // Fix the SVG content to ensure proper XML structure
     svgContent = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + 
                  '<!-- Created with Cloud Pattern Customizer -->\n' +
                  svgContent;
     
-    // Ensure the SVG has proper namespace
     if(!svgContent.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
         svgContent = svgContent.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
     }
     
-    // Ensure the SVG has proper viewBox if missing
-    if(!svgContent.match(/^<svg[^>]+viewBox=/)) {
-        svgContent = svgContent.replace(/^<svg/, '<svg viewBox="0 0 1399.8 1400"');
-    }
-    
-    // Create download link
     const blob = new Blob([svgContent], {type: 'image/svg+xml;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = 'cloud-pattern.svg';
     
-    // Trigger download
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Clean up
     setTimeout(() => {
         URL.revokeObjectURL(url);
     }, 100);
 }
 
-// Set up event listeners
+// ====== INITIALIZATION ======
 function setupEventListeners() {
     // Global controls
-    document.getElementById('randomizeAll').addEventListener('click', randomizeAllColors);
-    document.getElementById('resetColors').addEventListener('click', resetColors);
-    document.getElementById('downloadSVG').addEventListener('click', downloadSVG);
+    document.getElementById('randomizeAll')?.addEventListener('click', randomizeAllColors);
+    document.getElementById('resetColors')?.addEventListener('click', resetColors);
+    document.getElementById('downloadSVG')?.addEventListener('click', downloadSVG);
     
-    // Background color control
-    document.getElementById('bg-fill').addEventListener('input', (e) => {
+    // Version selector
+    document.getElementById('version-select')?.addEventListener('change', (e) => {
+        changeVersion(e.target.value);
+    });
+    
+    // Background color
+    document.getElementById('bg-fill')?.addEventListener('input', (e) => {
         currentColors.bgColor = e.target.value;
         document.getElementById('bg').setAttribute('fill', currentColors.bgColor);
     });
     
-    // Group color controls
-    for (let i = 1; i <= 8; i++) {
-        document.getElementById(`g${i}-fill`).addEventListener('input', (e) => {
-            currentColors[`g${i}Fill`] = e.target.value;
+    // Group colors
+    currentColors.groups.forEach((_, i) => {
+        document.getElementById(`g${i+1}-fill`)?.addEventListener('input', (e) => {
+            currentColors.groups[i].fill = e.target.value;
             renderClouds();
         });
         
-        document.getElementById(`g${i}-stroke`).addEventListener('input', (e) => {
-            currentColors[`g${i}Stroke`] = e.target.value;
+        document.getElementById(`g${i+1}-stroke`)?.addEventListener('input', (e) => {
+            currentColors.groups[i].stroke = e.target.value;
             renderClouds();
         });
-    }
+    });
 }
 
-// Initialize the app
 function init() {
     createGroupControls();
     renderClouds();
     setupEventListeners();
 }
 
-// Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', init);

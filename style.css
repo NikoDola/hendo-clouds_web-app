@@ -138,3 +138,18 @@ button:hover {
 .cloud {
     position: absolute;
 }
+.version-control {
+    margin: 20px 0;
+}
+
+.version-control label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.version-control select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
