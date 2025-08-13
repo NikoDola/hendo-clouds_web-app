@@ -1,35 +1,117 @@
-:root{
-  /* initial pairs */
-  --bg:#000000;
+:root {
+    /* initial pairs */
+    --bg: #000000;
 
-  --c1a:#e53935; --c1b:#ffd166;
-  --c2a:#8e44ad; --c2b:#74d3ff;
-  --c3a:#2e7d32; --c3b:#ff9eb0;
-  --c4a:#f39c12; --c4b:#9bbcff;
-  --c5a:#1565c0; --c5b:#ffe082;
-  --c6a:#d81b60; --c6b:#a5ff9b;
-  --c7a:#009688; --c7b:#ffb3f6;
-  --c8a:#6d4c41; --c8b:#c1ff72;
+    --c1a: #e53935;
+    --c1b: #ffd166;
+    --c2a: #8e44ad;
+    --c2b: #74d3ff;
+    --c3a: #2e7d32;
+    --c3b: #ff9eb0;
+    --c4a: #f39c12;
+    --c4b: #9bbcff;
+    --c5a: #1565c0;
+    --c5b: #ffe082;
+    --c6a: #d81b60;
+    --c6b: #a5ff9b;
+    --c7a: #009688;
+    --c7b: #ffb3f6;
+    --c8a: #6d4c41;
+    --c8b: #c1ff72;
 }
 
-body{margin:0;background:#111;color:#eee;font:14px/1.3 system-ui, Arial, sans-serif;display:grid;gap:12px;place-items:start;padding:12px}
-.panel{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px;width:100%}
-.panel .row{display:flex;align-items:center;gap:8px;background:#1b1b1b;border:1px solid #2a2a2a;border-radius:8px;padding:8px}
-.row label{min-width:92px;opacity:.85}
-.row input{width:32px;height:28px;border:none;background:transparent;cursor:pointer}
+body {
+    margin: 0;
+    background: #111;
+    color: #eee;
+    font: 14px/1.3 system-ui, Arial, sans-serif;
+    display: grid;
+    gap: 12px;
+    place-items: start;
+    padding: 12px
+}
 
-.artboard{width:400px;height:400px;border:1px solid #333;display:block}
-svg{display:block}
+.panel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 10px;
+    width: 100%
+}
+
+.panel .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1b1b1b;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 8px
+}
+
+.row label {
+    min-width: 92px;
+    opacity: .85
+}
+
+.row input {
+    width: 32px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer
+}
+
+.artboard {
+    width: 400px;
+    height: 400px;
+    border: 1px solid #333;
+    display: block
+}
+
+svg {
+    display: block
+}
 
 /* Map each group to two variables the symbol will read */
-.Cloud1{ --ca:var(--c1a); --cb:var(--c1b); }
-.Cloud2{ --ca:var(--c2a); --cb:var(--c2b); }
-.Cloud3{ --ca:var(--c3a); --cb:var(--c3b); }
-.Cloud4{ --ca:var(--c4a); --cb:var(--c4b); }
-.Cloud5{ --ca:var(--c5a); --cb:var(--c5b); }
-.Cloud6{ --ca:var(--c6a); --cb:var(--c6b); }
-.Cloud7{ --ca:var(--c7a); --cb:var(--c7b); }
-.Cloud8{ --ca:var(--c8a); --cb:var(--c8b); }
+.Cloud1 {
+    --ca: var(--c1a);
+    --cb: var(--c1b);
+}
+
+.Cloud2 {
+    --ca: var(--c2a);
+    --cb: var(--c2b);
+}
+
+.Cloud3 {
+    --ca: var(--c3a);
+    --cb: var(--c3b);
+}
+
+.Cloud4 {
+    --ca: var(--c4a);
+    --cb: var(--c4b);
+}
+
+.Cloud5 {
+    --ca: var(--c5a);
+    --cb: var(--c5b);
+}
+
+.Cloud6 {
+    --ca: var(--c6a);
+    --cb: var(--c6b);
+}
+
+.Cloud7 {
+    --ca: var(--c7a);
+    --cb: var(--c7b);
+}
+
+.Cloud8 {
+    --ca: var(--c8a);
+    --cb: var(--c8b);
+}
 
 body {
     font-family: Arial, sans-serif;
@@ -50,7 +132,7 @@ body {
     background: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .svg-container {
@@ -58,8 +140,84 @@ body {
     background: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     overflow: auto;
+}
+
+.version-control {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+.version-control label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.version-control select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.color-codes-display {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.color-codes-display h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.color-code-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.color-code-item:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+}
+
+.color-code-text {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #495057;
+    user-select: all;
+}
+
+.color-label {
+    font-size: 12px;
+    color: #6c757d;
+    min-width: 60px;
 }
 
 @media (max-width: 1000px) {
@@ -69,7 +227,8 @@ body {
     }
 }
 
-h1, h2 {
+h1,
+h2 {
     color: #333;
 }
 
@@ -80,23 +239,45 @@ h1, h2 {
 }
 
 .color-group {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    width: 100%;
+    margin-bottom: 20px;
+}
+
+.color-group h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
 }
 
 .color-control {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    min-width: 60px;
+    align-items: flex-start;
+    margin-bottom: 10px;
 }
 
 .color-control label {
     margin-bottom: 5px;
     font-size: 14px;
     color: #555;
+    font-weight: bold;
+}
+
+.color-code-display {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    padding: 4px 8px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+    user-select: all;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.color-code-display:hover {
+    background-color: #e9ecef;
 }
 
 label {
@@ -108,6 +289,9 @@ label {
 input[type="color"] {
     width: 100%;
     height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 button {
@@ -137,19 +321,4 @@ button:hover {
 
 .cloud {
     position: absolute;
-}
-.version-control {
-    margin: 20px 0;
-}
-
-.version-control label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.version-control select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
 }
