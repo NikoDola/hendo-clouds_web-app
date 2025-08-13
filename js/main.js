@@ -2,21 +2,21 @@
 const versions = {
     "0": {
         name: "Single Cloud",
-        bgColor: 'transparent', // Transparent background for single cloud
+        bgColor: '#000000', // Black background by default
         groups: [
             { stroke: '#64BC46', fill: '#4D9133' } // Single cloud
         ]
     },
     "1": {
         name: "1-Color (Unified)",
-        bgColor: '#1A171C',
+        bgColor: '#000000', // Black background by default
         groups: [
             { stroke: '#64BC46', fill: '#4D9133' } // Single color group for all clouds
         ]
     },
     "2": {
         name: "2-Color (Chess)",
-        bgColor: '#1A171C', // Dark background matching your SVG
+        bgColor: '#000000', // Black background by default
         groups: [
             { stroke: '#FFFFFF', fill: '#FFFFFF' }, // White
             { stroke: '#020401', fill: '#020401' }  // Near black
@@ -24,7 +24,7 @@ const versions = {
     },
     "4": {
         name: "4-Color (Primary)",
-        bgColor: '#1A171C',
+        bgColor: '#000000', // Black background by default
         groups: [
             { stroke: '#64BC46', fill: '#4D9133' }, // Green
             { stroke: '#414FA2', fill: '#2A3C84' }, // Blue
@@ -34,7 +34,7 @@ const versions = {
     },
     "8": {
         name: "8-Color (Full)",
-        bgColor: '#1A171C',
+        bgColor: '#000000', // Black background by default
         groups: [
             { stroke: '#64BC46', fill: '#4D9133' },
             { stroke: '#EDE829', fill: '#ADA61E' },
@@ -51,8 +51,9 @@ const versions = {
 // Cloud positions for different versions
 const cloudPositions = {
     "0": [
-        // Single cloud in center - positioned at exact center of 1399.8 x 1400 canvas
-        [{ x: 699.9, y: 700 }]
+        // Single cloud positioned up and left - final position after all adjustments
+        // Background dimensions: 1399.8 x 1400, cloud scale: 6.209x
+        [{ x: 99.9, y: 250 }]
     ],
     "1": [
         // All 8 groups merged into one - using the same positions as version 8
@@ -146,7 +147,7 @@ const twoColorOrder = [0, 1, 0, 1, 0, 1, 0, 1]; // 0 = white, 1 = black
 
 let currentVersion = "8"; // Default to 8-color version
 let currentColors = {
-    bgColor: versions[currentVersion].bgColor,
+    bgColor: '#000000', // Start with black background
     groups: JSON.parse(JSON.stringify(versions[currentVersion].groups))
 };
 
@@ -224,6 +225,19 @@ function copyToClipboard(text) {
     }).catch(err => {
         console.error('Failed to copy: ', err);
     });
+}
+
+// Function to make background transparent
+function makeTransparent() {
+    currentColors.bgColor = 'transparent';
+    const bgElement = document.getElementById('bg');
+    bgElement.style.display = 'none';
+
+    // Update color picker and display
+    document.getElementById('bg-fill').value = '#000000';
+    document.getElementById('bg-color-code').textContent = 'transparent';
+
+    displayColorCodes();
 }
 
 // Function to toggle background visibility
@@ -324,9 +338,13 @@ function renderClouds() {
         positions[0].forEach(pos => {
             const cloudElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
             cloudElement.innerHTML = cloudSVG;
-            // Center the cloud perfectly and scale it up by 100% (2x)
-            // The cloud SVG has its own center point, so we position it at canvas center
-            cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y}) scale(2)`);
+
+            // Center the cloud perfectly within the background boundaries
+            // Background dimensions: 1399.8 x 1400
+            // Cloud scale: 6.209x (10% smaller than previous 6.899x)
+            // Position at upper-left area: (99.9, -200)
+            const scale = 6.209;
+            cloudElement.setAttribute('transform', `translate(${pos.x}, ${pos.y}) scale(${scale})`);
 
             const paths = cloudElement.querySelectorAll('path');
             paths[0].setAttribute('fill', colorGroups[0].stroke);
@@ -433,6 +451,13 @@ function resetColors() {
         bgColor: versions[currentVersion].bgColor,
         groups: JSON.parse(JSON.stringify(versions[currentVersion].groups))
     };
+
+    // Ensure background is visible when resetting
+    const bgElement = document.getElementById('bg');
+    if (bgElement) {
+        bgElement.style.display = 'block';
+    }
+
     renderClouds();
     createGroupControls();
     setupEventListeners();
@@ -492,6 +517,7 @@ function setupEventListeners() {
     document.getElementById('resetColors')?.addEventListener('click', resetColors);
     document.getElementById('downloadSVG')?.addEventListener('click', downloadSVG);
     document.getElementById('toggleBackground')?.addEventListener('click', toggleBackground);
+    document.getElementById('makeTransparent')?.addEventListener('click', makeTransparent);
 
     // Version selector
     document.getElementById('version-select')?.addEventListener('change', (e) => {
@@ -504,14 +530,12 @@ function setupEventListeners() {
         const bgElement = document.getElementById('bg');
         bgElement.setAttribute('fill', currentColors.bgColor);
 
-        // Update background visibility based on new color
-        if (currentColors.bgColor === 'transparent' || !backgroundVisible) {
-            bgElement.style.display = 'none';
-        } else {
+        // Show background if a color is selected (not transparent)
+        if (currentColors.bgColor !== 'transparent') {
             bgElement.style.display = 'block';
         }
 
-        document.getElementById('bg-color-code').textContent = currentColors.bgColor === 'transparent' ? 'transparent' : currentColors.bgColor;
+        document.getElementById('bg-color-code').textContent = currentColors.bgColor;
         displayColorCodes();
     });
 
