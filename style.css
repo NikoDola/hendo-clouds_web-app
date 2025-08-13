@@ -319,6 +319,27 @@ button:hover {
     border-radius: 5px;
 }
 
+.background-controls {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e8f4fd;
+    border-radius: 5px;
+    border: 1px solid #bee5eb;
+}
+
+.background-controls h3 {
+    margin: 0 0 15px 0;
+    color: #0c5460;
+    font-size: 16px;
+}
+
+.background-info {
+    margin: 10px 0 0 0;
+    font-size: 12px;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
 .cloud {
     position: absolute;
 }

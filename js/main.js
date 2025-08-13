@@ -227,18 +227,7 @@ function copyToClipboard(text) {
     });
 }
 
-// Function to make background transparent
-function makeTransparent() {
-    currentColors.bgColor = 'transparent';
-    const bgElement = document.getElementById('bg');
-    bgElement.style.display = 'none';
 
-    // Update color picker and display
-    document.getElementById('bg-fill').value = '#000000';
-    document.getElementById('bg-color-code').textContent = 'transparent';
-
-    displayColorCodes();
-}
 
 // Function to toggle background visibility
 function toggleBackground() {
@@ -305,25 +294,24 @@ function renderClouds() {
     // Clear existing clouds
     svg.innerHTML = '';
 
-    // Add background
-    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    bg.setAttribute('width', '1399.8');
-    bg.setAttribute('height', '1400');
-    bg.setAttribute('fill', currentColors.bgColor);
-    bg.id = 'bg';
-
-    // Hide background if it's transparent or if background is toggled off
-    if (currentColors.bgColor === 'transparent' || !backgroundVisible) {
-        bg.style.display = 'none';
-    } else {
-        bg.style.display = 'block';
+    // Add background only if it should be visible
+    if (backgroundVisible) {
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        bg.setAttribute('width', '1399.8');
+        bg.setAttribute('height', '1400');
+        bg.setAttribute('fill', currentColors.bgColor);
+        bg.id = 'bg';
+        svg.appendChild(bg);
     }
 
-    svg.appendChild(bg);
-
     // Update color picker
-    document.getElementById('bg-fill').value = currentColors.bgColor === 'transparent' ? '#1A171C' : currentColors.bgColor;
-    document.getElementById('bg-color-code').textContent = currentColors.bgColor === 'transparent' ? 'transparent' : currentColors.bgColor;
+    const bgFillInput = document.getElementById('bg-fill');
+    const bgColorCode = document.getElementById('bg-color-code');
+
+    if (bgFillInput && bgColorCode) {
+        bgFillInput.value = currentColors.bgColor;
+        bgColorCode.textContent = currentColors.bgColor;
+    }
 
     // Get positions for current version
     const positions = cloudPositions[currentVersion];
@@ -452,10 +440,20 @@ function resetColors() {
         groups: JSON.parse(JSON.stringify(versions[currentVersion].groups))
     };
 
+    // Reset background state
+    backgroundVisible = true;
+
     // Ensure background is visible when resetting
     const bgElement = document.getElementById('bg');
     if (bgElement) {
         bgElement.style.display = 'block';
+    }
+
+    // Reset button state
+    const toggleButton = document.getElementById('toggleBackground');
+    if (toggleButton) {
+        toggleButton.textContent = 'Remove Background';
+        toggleButton.style.backgroundColor = '#4CAF50';
     }
 
     renderClouds();
@@ -469,9 +467,117 @@ function changeVersion(version) {
         bgColor: versions[version].bgColor,
         groups: JSON.parse(JSON.stringify(versions[version].groups))
     };
+
+    // Reset background state when changing versions
+    backgroundVisible = true;
+
     renderClouds();
     createGroupControls();
     setupEventListeners();
+}
+
+function downloadPNG() {
+    const svgElement = document.getElementById('svg-preview');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Create a temporary SVG for rendering
+    const tempSvg = svgElement.cloneNode(true);
+
+    // Remove background if it should be hidden
+    if (!backgroundVisible) {
+        const bgElement = tempSvg.querySelector('#bg');
+        if (bgElement) {
+            bgElement.remove();
+        }
+    }
+
+    const data = (new XMLSerializer()).serializeToString(tempSvg);
+    const DOMURL = window.URL || window.webkitURL || window;
+
+    const img = new Image();
+    const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    const url = DOMURL.createObjectURL(svgBlob);
+
+    img.onload = function () {
+        // Set canvas dimensions
+        canvas.width = svgElement.width.baseVal.value;
+        canvas.height = svgElement.height.baseVal.value;
+
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the SVG image (without background if removed)
+        ctx.drawImage(img, 0, 0);
+        DOMURL.revokeObjectURL(url);
+
+        // Convert to PNG and download
+        const imgURI = canvas
+            .toDataURL('image/png')
+            .replace('image/png', 'image/octet-stream');
+
+        const link = document.createElement('a');
+        const filename = !backgroundVisible ? 'cloud-pattern-no-bg.png' : 'cloud-pattern.png';
+        link.download = filename;
+        link.href = imgURI;
+        link.click();
+    };
+
+    img.src = url;
+}
+
+function downloadJPG() {
+    const svgElement = document.getElementById('svg-preview');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Create a temporary SVG for rendering
+    const tempSvg = svgElement.cloneNode(true);
+
+    // Remove background if it should be hidden
+    if (!backgroundVisible) {
+        const bgElement = tempSvg.querySelector('#bg');
+        if (bgElement) {
+            bgElement.remove();
+        }
+    }
+
+    const data = (new XMLSerializer()).serializeToString(tempSvg);
+    const DOMURL = window.URL || window.webkitURL || window;
+
+    const img = new Image();
+    const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    const url = DOMURL.createObjectURL(svgBlob);
+
+    img.onload = function () {
+        // Set canvas dimensions
+        canvas.width = svgElement.width.baseVal.value;
+        canvas.height = svgElement.height.baseVal.value;
+
+        // For JPG, we need a background color (JPG doesn't support transparency)
+        // Use white background if background is removed
+        if (!backgroundVisible) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Draw the SVG image
+        ctx.drawImage(img, 0, 0);
+        DOMURL.revokeObjectURL(url);
+
+        // Convert to JPG and download
+        const imgURI = canvas
+            .toDataURL('image/jpeg', 0.92) // 0.92 is the quality (92%)
+            .replace('image/jpeg', 'image/octet-stream');
+
+        const link = document.createElement('a');
+        const filename = !backgroundVisible ? 'cloud-pattern-no-bg.jpg' : 'cloud-pattern.jpg';
+        link.download = filename;
+        link.href = imgURI;
+        link.click();
+    };
+
+    img.src = url;
 }
 
 function downloadSVG() {
@@ -497,8 +603,8 @@ function downloadSVG() {
     const link = document.createElement('a');
     link.href = url;
 
-    // Set filename based on background visibility
-    const filename = backgroundVisible ? 'cloud-pattern.svg' : 'cloud-pattern-transparent.svg';
+    // Set filename based on background state
+    const filename = !backgroundVisible ? 'cloud-pattern-no-bg.svg' : 'cloud-pattern.svg';
     link.download = filename;
 
     document.body.appendChild(link);
@@ -516,8 +622,9 @@ function setupEventListeners() {
     document.getElementById('randomizeAll')?.addEventListener('click', randomizeAllColors);
     document.getElementById('resetColors')?.addEventListener('click', resetColors);
     document.getElementById('downloadSVG')?.addEventListener('click', downloadSVG);
+    document.getElementById('downloadJPG')?.addEventListener('click', downloadJPG);
+    document.getElementById('downloadPNG')?.addEventListener('click', downloadPNG);
     document.getElementById('toggleBackground')?.addEventListener('click', toggleBackground);
-    document.getElementById('makeTransparent')?.addEventListener('click', makeTransparent);
 
     // Version selector
     document.getElementById('version-select')?.addEventListener('change', (e) => {
@@ -527,11 +634,10 @@ function setupEventListeners() {
     // Background color
     document.getElementById('bg-fill')?.addEventListener('input', (e) => {
         currentColors.bgColor = e.target.value;
-        const bgElement = document.getElementById('bg');
-        bgElement.setAttribute('fill', currentColors.bgColor);
 
-        // Show background if a color is selected (not transparent)
-        if (currentColors.bgColor !== 'transparent') {
+        const bgElement = document.getElementById('bg');
+        if (bgElement) {
+            bgElement.setAttribute('fill', currentColors.bgColor);
             bgElement.style.display = 'block';
         }
 
