@@ -6,15 +6,26 @@ body {
   font-family: system-ui, sans-serif;
   padding: 20px;
 }
-
+.drawingWrapper{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
 /* Controls */
 .controls {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+  height: 30px;
+  justify-content: center;
+  margin: 0 auto;
+  
 }
-
+#addColor{
+  
+}
 /* Color panel */
 .colorsPanel {
   margin-bottom: 20px;
@@ -63,9 +74,33 @@ body {
   max-width: 20rem;
   height: auto;
 }
-
-@media (max-width: 768px) {
-  #preview svg {
-    max-width: 90%;
-  }
+#download{
+  width: 100%;
+  margin-top: 1.5rem;
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  background: green;
+  color: white;
+  border-radius: 5px;
+}
+.routeLink{
+  margin-bottom: 1rem;
+  width: 100%;
+}
+#colorPicker{
+  height: 30px;
+}
+#select-category{
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  width: 20%;
+}
+@media (max-width: 1000px) {
+#preview svg {
+  width: 100%;
+}
+#select-category{
+  width: 100%;
+}
 }
