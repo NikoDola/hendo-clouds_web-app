@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SVG Color & Export Tool</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="controls">
+    <a href="/">Cloud App</a>
+    <input type="color" id="colorPicker" value="#000000" />
+    <button id="addColor">Add color</button>
+    <button id="download">Download ZIP</button>
+  </div>
+
+  <div class="colorsPanel">
+    <p>
+      Colors added:
+      <strong id="colorCount">0</strong>
+    </p>
+    <div id="colorList"></div>
+  </div>
+
+  <div id="preview"></div>
+  <select id="select-category">
+    <option value="fill" selected data="fill" type="fill">Fill</option>
+    <option value="outline" data="outline" type="outline">Outline</option>
+  </select>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
