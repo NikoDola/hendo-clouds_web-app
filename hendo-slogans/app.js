@@ -6,19 +6,29 @@ const downloadBtn = document.getElementById("download");
 const colorListEl = document.getElementById("colorList");
 const colorCountEl = document.getElementById("colorCount");
 const selectCategory = document.getElementById("select-category");
+const selectAllSlogansEl = document.getElementById("select-all-slogans");
+const selectSloganEl = document.getElementById("select-slogan");
+const selectSloganWrapEl = document.getElementById("select-slogan-wrap");
+const selectSloganOverlayEl = document.getElementById("select-slogan-overlay");
+const sloganTooltipEl = document.getElementById("slogan-tooltip");
 
 /* state */
 let selectedValue = "fill";
 let colors = [];
 let svgs = [];
+let selectAllSlogans = true;
+let selectedSloganVariant = "galaxy";
+let sloganTooltipTimer = null;
 
-/* base filenames */
-const slogans = [
-  "slogan-fill_galaxy.svg",
-  "slogan-fill_intergalactic.svg",
-  "slogan-fill_magic-power.svg",
-  "slogan-fill_next-level.svg",
-];
+const sloganVariants = ["galaxy", "intergalactic", "magic-power", "next-level"];
+
+/* base filenames (fill template) */
+const slogans = sloganVariants.map(v => `slogan-fill_${v}.svg`);
+
+function getFilesForMode(mode) {
+  if (selectAllSlogans) return slogans.map(f => f.replace("fill", mode));
+  return [`slogan-${mode}_${selectedSloganVariant}.svg`];
+}
 
 /* ============================= */
 /* SVG NORMALIZATION (IMPORTANT) */
@@ -41,7 +51,7 @@ function loadSvgs(mode) {
   preview.innerHTML = "";
   svgs = [];
 
-  const files = slogans.map(f => f.replace("fill", mode));
+  const files = getFilesForMode(mode);
 
   Promise.all(
     files.map(file =>
@@ -70,6 +80,56 @@ function loadSvgs(mode) {
   });
 }
 
+function hideSloganTooltip() {
+  if (!sloganTooltipEl) return;
+  sloganTooltipEl.style.display = "none";
+  if (sloganTooltipTimer) {
+    clearTimeout(sloganTooltipTimer);
+    sloganTooltipTimer = null;
+  }
+}
+
+function showSloganTooltipAt(x, y, text) {
+  if (!sloganTooltipEl) return;
+
+  if (sloganTooltipTimer) clearTimeout(sloganTooltipTimer);
+
+  sloganTooltipEl.textContent = text;
+  sloganTooltipEl.style.display = "block";
+
+  // Initial position (we'll clamp after measuring)
+  let left = x + 12;
+  let top = y + 12;
+  sloganTooltipEl.style.left = `${left}px`;
+  sloganTooltipEl.style.top = `${top}px`;
+
+  // Clamp into viewport
+  const rect = sloganTooltipEl.getBoundingClientRect();
+  const pad = 12;
+  const maxLeft = window.innerWidth - rect.width - pad;
+  const maxTop = window.innerHeight - rect.height - pad;
+  left = Math.min(left, maxLeft);
+  top = Math.min(top, maxTop);
+  left = Math.max(pad, left);
+  top = Math.max(pad, top);
+  sloganTooltipEl.style.left = `${left}px`;
+  sloganTooltipEl.style.top = `${top}px`;
+
+  sloganTooltipTimer = setTimeout(() => {
+    sloganTooltipEl.style.display = "none";
+    sloganTooltipTimer = null;
+  }, 3000);
+}
+
+function updateSloganSelectLockUI() {
+  const locked = !!selectAllSlogans;
+  selectSloganEl.disabled = locked;
+  if (selectSloganWrapEl) {
+    selectSloganWrapEl.classList.toggle("isDisabled", locked);
+  }
+  if (!locked) hideSloganTooltip();
+}
+
 /* ============================= */
 /* SELECT CHANGE */
 /* ============================= */
@@ -77,6 +137,28 @@ selectCategory.addEventListener("change", () => {
   selectedValue = selectCategory.value;
   loadSvgs(selectedValue);
 });
+
+selectAllSlogansEl.addEventListener("change", () => {
+  selectAllSlogans = !!selectAllSlogansEl.checked;
+  updateSloganSelectLockUI();
+  loadSvgs(selectedValue);
+});
+
+selectSloganEl.addEventListener("change", () => {
+  selectedSloganVariant = selectSloganEl.value;
+  if (!selectAllSlogans) loadSvgs(selectedValue);
+});
+
+if (selectSloganOverlayEl) {
+  selectSloganOverlayEl.addEventListener("click", e => {
+    if (!selectAllSlogans) return;
+    showSloganTooltipAt(
+      e.clientX,
+      e.clientY,
+      "You need to uncheck “Select all” so you can select a specific slogan."
+    );
+  });
+}
 
 /* ============================= */
 /* ADD COLOR */
@@ -177,12 +259,14 @@ downloadBtn.onclick = async () => {
   const blob = await zip.generateAsync({ type: "blob" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "slogans.zip";
+  a.download = selectAllSlogans
+    ? "slogans.zip"
+    : `slogan-${selectedSloganVariant}.zip`;
   a.click();
 };
 
 async function exportMode(mode, folder) {
-  const files = slogans.map(f => f.replace("fill", mode));
+  const files = getFilesForMode(mode);
 
   for (let i = 0; i < files.length; i++) {
     const svgText = await fetch(`./slogans/${mode}/${files[i]}`).then(r => r.text());
@@ -268,4 +352,23 @@ function svgToPng(svgEl) {
 /* ============================= */
 /* INIT */
 /* ============================= */
+function initSloganSelector() {
+  selectSloganEl.innerHTML = "";
+
+  sloganVariants.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v.replace(/-/g, " ");
+    selectSloganEl.appendChild(opt);
+  });
+
+  // set defaults
+  selectAllSlogansEl.checked = true;
+  selectAllSlogans = true;
+  selectedSloganVariant = sloganVariants[0];
+  selectSloganEl.value = selectedSloganVariant;
+  updateSloganSelectLockUI();
+}
+
+initSloganSelector();
 loadSvgs(selectedValue);

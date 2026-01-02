@@ -3,32 +3,205 @@
 }
 
 body {
+  margin: 0;
   font-family: system-ui, sans-serif;
-  padding: 20px;
+  background: #111;
+  color: #eee;
+  padding: 12px;
 }
-.drawingWrapper{
+
+.container {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+/* Controls panel */
+.controls {
+  width: 340px;
+  background: #1b1b1b;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+}
+
+.svg-container {
+  flex: 1;
+  background: #1b1b1b;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  overflow: auto;
+}
+
+h1 {
+  margin: 8px 0 14px 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.routeLink {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #9bbcff;
+  text-decoration: none;
+}
+
+.routeLink:hover {
+  text-decoration: underline;
+}
+
+/* Panel rows */
+.panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.panel .row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.row label {
+  min-width: 72px;
+  opacity: 0.85;
+}
+
+.row input[type="color"] {
+  width: 38px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.row select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #111;
+  color: #eee;
+}
+
+.row select:disabled {
+  background: #0b0b0b;
+  color: #666;
+  border-color: #232323;
+  opacity: 1;
+}
+
+.sloganControl {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.checkboxLine {
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
 }
-/* Controls */
-.controls {
-  display: flex;
-  gap: 10px;
-  height: 30px;
-  justify-content: center;
-  margin: 0 auto;
-  
+
+.selectWrap {
+  position: relative;
+  width: 100%;
 }
-#addColor{
-  
+
+.selectOverlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  cursor: not-allowed;
 }
+
+.selectWrap.isDisabled .selectOverlay {
+  display: block;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  max-width: 280px;
+  background: #000;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.hint {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+button {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+button:hover {
+  background: #45a049;
+}
+
+.actions {
+  margin-top: 14px;
+}
+
+#download {
+  width: 100%;
+}
+
 /* Color panel */
 .colorsPanel {
-  margin-bottom: 20px;
+  margin-top: 14px;
+  padding: 12px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+}
+
+.colorsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.colorsTitle {
+  font-weight: 600;
+}
+
+.colorsMeta {
+  opacity: 0.8;
+  font-size: 12px;
 }
 
 #colorList {
@@ -41,23 +214,24 @@ body {
 .colorItem {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 8px;
   position: relative;
-  border: 1px solid #ccc;
+  border: 1px solid #333;
 }
 
 .colorItem button {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 18px;
-  height: 18px;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: none;
   background: #000;
   color: #fff;
   font-size: 12px;
   cursor: pointer;
+  padding: 0;
 }
 
 /* SVG preview layout */
@@ -71,36 +245,19 @@ body {
 /* SVG sizing */
 #preview svg {
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
   height: auto;
+  display: block;
 }
-#download{
-  width: 100%;
-  margin-top: 1.5rem;
-  border: none;
-  outline: none;
-  padding: 0.5rem;
-  background: green;
-  color: white;
-  border-radius: 5px;
-}
-.routeLink{
-  margin-bottom: 1rem;
-  width: 100%;
-}
-#colorPicker{
-  height: 30px;
-}
-#select-category{
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  width: 20%;
-}
+
 @media (max-width: 1000px) {
-#preview svg {
-  width: 100%;
+  .container {
+    flex-direction: column;
+  }
+
+  .controls {
+    width: 100%;
+  }
 }
-#select-category{
-  width: 100%;
-}
-}
+
+

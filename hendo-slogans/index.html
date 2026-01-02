@@ -2,36 +2,78 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>SVG Color & Export Tool</title>
+    <title>Hendo Slogans Customizer</title>
     <link rel="stylesheet" href="style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
-       <a class="routeLink" href="../index.html">Cloud App</a>
-    <div class="drawingWrapper">
+    <div class="container">
       <div class="controls">
-     
-        <input type="color" id="colorPicker" value="#000000" />
-        <button id="addColor">Add color</button>
-          <div class="colorsPanel">
-        <p>
-        
-          <strong style="visibility: hidden;" id="colorCount"></strong>
-        </p>
-      
-      </div>
+        <a class="routeLink" href="../index.html">Cloud App</a>
+        <h1>Hendo Slogans Customizer</h1>
+
+        <div class="panel">
+          <div class="row">
+            <label for="colorPicker">Pick color</label>
+            <input type="color" id="colorPicker" value="#000000" />
+            <button id="addColor" type="button">Add</button>
+          </div>
+
+          <div class="row">
+            <label for="select-category">Style</label>
+            <select id="select-category">
+              <option value="fill" selected>Fill</option>
+              <option value="outline">Outline</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label for="select-slogan">Slogan</label>
+            <div class="sloganControl">
+              <div id="select-slogan-wrap" class="selectWrap">
+                <select id="select-slogan"></select>
+                <div
+                  id="select-slogan-overlay"
+                  class="selectOverlay"
+                  aria-hidden="true"
+                ></div>
+              </div>
+
+              <label class="checkboxLine">
+                <input id="select-all-slogans" type="checkbox" checked />
+                <span class="hint">Select all</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="colorsPanel">
+          <div class="colorsHeader">
+            <div class="colorsTitle">Colors</div>
+            <div class="colorsMeta">
+              <span id="colorCount">0</span>
+            </div>
+          </div>
+          <div id="colorList"></div>
+        </div>
+
+        <div class="actions">
+          <button id="download" type="button">Download ZIP</button>
+        </div>
       </div>
 
-  <div id="colorList"></div>
-      <select id="select-category">
-        <option value="fill" selected data="fill" type="fill">Fill</option>
-        <option value="outline" data="outline" type="outline">Outline</option>
-      </select>
-         
+      <div class="svg-container">
+        <div id="preview"></div>
+      </div>
     </div>
 
-    <div id="preview"></div>
-    <button id="download">Download ZIP</button>
+    <div
+      id="slogan-tooltip"
+      class="tooltip"
+      role="status"
+      aria-live="polite"
+    ></div>
+
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="app.js"></script>
   </body>
