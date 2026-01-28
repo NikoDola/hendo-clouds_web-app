@@ -510,12 +510,90 @@ function downloadSVG() {
     }, 100);
 }
 
+function downloadPNG() {
+    const svgElement = document.getElementById('svg-preview');
+    if (!svgElement) return;
+
+    const serializer = new XMLSerializer();
+    let svgContent = serializer.serializeToString(svgElement);
+
+    // Remove background if hidden OR explicitly transparent
+    if (!backgroundVisible || currentColors.bgColor === 'transparent') {
+        svgContent = svgContent.replace(/<rect[^>]*id="bg"[^>]*\/?>/, '');
+    }
+
+    // Ensure xmlns for SVG parsing in the image loader
+    if (!svgContent.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+        svgContent = svgContent.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+        // Prefer explicit width/height, fallback to viewBox
+        const wAttr = parseFloat(svgElement.getAttribute('width') || '');
+        const hAttr = parseFloat(svgElement.getAttribute('height') || '');
+        const viewBox = (svgElement.getAttribute('viewBox') || '').trim().split(/\s+/).map(Number);
+        const vbW = viewBox.length === 4 ? viewBox[2] : NaN;
+        const vbH = viewBox.length === 4 ? viewBox[3] : NaN;
+
+        const width = Number.isFinite(wAttr) ? wAttr : (Number.isFinite(vbW) ? vbW : img.width || 1399.8);
+        const height = Number.isFinite(hAttr) ? hAttr : (Number.isFinite(vbH) ? vbH : img.height || 1400);
+
+        // 2x export for sharper PNGs
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, width, height); // keep transparency when bg is removed
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((pngBlob) => {
+            if (!pngBlob) {
+                URL.revokeObjectURL(url);
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(pngBlob);
+
+            const hasBg = backgroundVisible && currentColors.bgColor !== 'transparent';
+            link.download = hasBg ? 'cloud-pattern.png' : 'cloud-pattern-transparent.png';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Cleanup URLs
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(link.href);
+            }, 100);
+        }, 'image/png');
+    };
+
+    img.onerror = () => {
+        URL.revokeObjectURL(url);
+        console.error('Failed to render SVG to PNG.');
+    };
+
+    img.src = url;
+}
+
 // ====== INITIALIZATION ======
 function setupEventListeners() {
     // Global controls
     document.getElementById('randomizeAll')?.addEventListener('click', randomizeAllColors);
     document.getElementById('resetColors')?.addEventListener('click', resetColors);
     document.getElementById('downloadSVG')?.addEventListener('click', downloadSVG);
+    document.getElementById('downloadPNG')?.addEventListener('click', downloadPNG);
     document.getElementById('toggleBackground')?.addEventListener('click', toggleBackground);
     document.getElementById('makeTransparent')?.addEventListener('click', makeTransparent);
 

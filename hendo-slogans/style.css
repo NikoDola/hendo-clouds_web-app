@@ -10,12 +10,20 @@ body {
   padding: 12px;
 }
 
+#downloadPng{
+  width: 100%;
+  background: transparent;
+  border: 1px solid lightgray;
+  margin-top: 1rem;
+}
+
 .container {
   display: flex;
   gap: 20px;
   width: 100%;
   margin: 0 auto;
   align-items: flex-start;
+  background: #000;red
 }
 
 /* Controls panel */
