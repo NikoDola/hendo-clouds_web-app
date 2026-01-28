@@ -14,7 +14,7 @@ const sloganTooltipEl = document.getElementById("slogan-tooltip");
 
 /* state */
 let selectedValue = "fill";
-let colors = [];
+let colors = ["#ffffff"];
 let svgs = [];
 let selectAllSlogans = true;
 let selectedSloganVariant = "galaxy";
@@ -371,4 +371,5 @@ function initSloganSelector() {
 }
 
 initSloganSelector();
+renderColors();
 loadSvgs(selectedValue);
