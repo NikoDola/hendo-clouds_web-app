@@ -2,6 +2,7 @@ const preview = document.getElementById("preview");
 const colorPicker = document.getElementById("colorPicker");
 const addColorBtn = document.getElementById("addColor");
 const downloadBtn = document.getElementById("download");
+const downloadPngBtn = document.getElementById("downloadPng");
 
 const colorListEl = document.getElementById("colorList");
 const colorCountEl = document.getElementById("colorCount");
@@ -255,31 +256,82 @@ function recolorAll() {
 /* DOWNLOAD BOTH MODES */
 /* ============================= */
 downloadBtn.onclick = async () => {
-  const zip = new JSZip();
-
-  for (const mode of ["fill", "outline"]) {
-    const folder = zip.folder(mode);
-    await exportMode(mode, folder);
+  if (typeof JSZip === "undefined") {
+    alert(
+      "ZIP download library (JSZip) failed to load. If you're offline or a network is blocked, PNG export can still work."
+    );
+    return;
   }
 
-  const blob = await zip.generateAsync({ type: "blob" });
+  try {
+    const zip = new JSZip();
+
+    for (const mode of ["fill", "outline"]) {
+      const folder = zip.folder(mode);
+      await exportMode(mode, folder);
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = selectAllSlogans
+      ? "slogans.zip"
+      : `slogan-${selectedSloganVariant}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 250);
+  } catch (err) {
+    // The most common cause is running from file:// (fetch can't load local SVG files)
+    const isFile = window.location?.protocol === "file:";
+    const hint = isFile
+      ? "\n\nIt looks like you're opening this page from your file system. The ZIP export needs a local web server so it can fetch the SVG files.\nTry: run a local server in the repo (e.g. VS Code/Live Server) and open http://localhost/..."
+      : "";
+    alert(`ZIP export failed.${hint}`);
+    console.error(err);
+  }
+};
+
+downloadPngBtn.onclick = async () => {
+  // When "Select all" is enabled, the preview contains multiple SVGs.
+  // In that case, download the first one as a convenience.
+  const first = svgs[0];
+  if (!first?.svgEl) return;
+
+  const pngBlob = await svgToPng(first.svgEl);
+  if (!pngBlob) return;
+
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = selectAllSlogans
-    ? "slogans.zip"
-    : `slogan-${selectedSloganVariant}.zip`;
+  a.href = URL.createObjectURL(pngBlob);
+
+  const baseName = selectAllSlogans
+    ? `${first.name}-${first.mode}`
+    : `slogan-${first.mode}_${selectedSloganVariant}`;
+  a.download = `${baseName}.png`;
+
+  document.body.appendChild(a);
   a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(a.href), 250);
 };
 
 async function exportMode(mode, folder) {
   const files = getFilesForMode(mode);
 
   for (let i = 0; i < files.length; i++) {
-    const svgText = await fetch(`./slogans/${mode}/${files[i]}`).then(r => r.text());
+    const url = `./slogans/${mode}/${files[i]}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${url} (${res.status})`);
+    }
+    const svgText = await res.text();
 
     const wrapper = document.createElement("div");
     wrapper.innerHTML = svgText.trim();
     const svgEl = wrapper.querySelector("svg");
+    if (!svgEl) throw new Error(`Invalid SVG file: ${url}`);
 
     normalizeSvg(svgEl);
     recolorSingle(svgEl);
@@ -288,7 +340,9 @@ async function exportMode(mode, folder) {
     folder.file(files[i], svgStr);
 
     const pngBlob = await svgToPng(svgEl);
-    folder.file(files[i].replace(".svg", ".png"), pngBlob);
+    if (pngBlob) {
+      folder.file(files[i].replace(".svg", ".png"), pngBlob);
+    }
   }
 }
 
@@ -342,13 +396,34 @@ function svgToPng(svgEl) {
     const url = URL.createObjectURL(blob);
 
     img.onload = () => {
-      canvas.width = img.width || 512;
-      canvas.height = img.height || 512;
-      ctx.drawImage(img, 0, 0);
+      // Prefer viewBox sizing (Illustrator exports often omit width/height)
+      const vb = (svgEl.getAttribute("viewBox") || "")
+        .trim()
+        .split(/\s+/)
+        .map(Number);
+
+      const vbW = vb.length === 4 ? vb[2] : NaN;
+      const vbH = vb.length === 4 ? vb[3] : NaN;
+
+      const width = Number.isFinite(img.width) && img.width > 0
+        ? img.width
+        : (Number.isFinite(vbW) ? vbW : 512);
+      const height = Number.isFinite(img.height) && img.height > 0
+        ? img.height
+        : (Number.isFinite(vbH) ? vbH : 512);
+
+      canvas.width = Math.round(width);
+      canvas.height = Math.round(height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(b => {
         resolve(b);
         URL.revokeObjectURL(url);
       });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
     };
 
     img.src = url;
