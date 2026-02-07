@@ -255,6 +255,53 @@ function recolorAll() {
 /* ============================= */
 /* DOWNLOAD BOTH MODES */
 /* ============================= */
+function downloadBlob(blob, filename) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 250);
+}
+
+function getFileForVariant(mode, variant) {
+  return `slogan-${mode}_${variant}.svg`;
+}
+
+async function exportVariant(mode, folder, variant) {
+  const file = getFileForVariant(mode, variant);
+  const url = `./slogans/${mode}/${file}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${url} (${res.status})`);
+  const svgText = await res.text();
+
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = svgText.trim();
+  const svgEl = wrapper.querySelector("svg");
+  if (!svgEl) throw new Error(`Invalid SVG file: ${url}`);
+
+  normalizeSvg(svgEl);
+  recolorSingle(svgEl);
+
+  const svgStr = new XMLSerializer().serializeToString(svgEl);
+  folder.file(file, svgStr);
+
+  const pngBlob = await svgToPng(svgEl);
+  if (pngBlob) folder.file(file.replace(".svg", ".png"), pngBlob);
+}
+
+async function downloadSinglePng() {
+  const first = svgs[0];
+  if (!first?.svgEl) return;
+
+  const pngBlob = await svgToPng(first.svgEl);
+  if (!pngBlob) return;
+
+  const filename = `slogan-${selectedValue}_${selectedSloganVariant}.png`;
+  downloadBlob(pngBlob, filename);
+}
+
 downloadBtn.onclick = async () => {
   if (typeof JSZip === "undefined") {
     alert(
@@ -264,24 +311,24 @@ downloadBtn.onclick = async () => {
   }
 
   try {
-    const zip = new JSZip();
-
-    for (const mode of ["fill", "outline"]) {
-      const folder = zip.folder(mode);
-      await exportMode(mode, folder);
+    // If user picked a single slogan, just download a single PNG (simpler UX)
+    if (!selectAllSlogans) {
+      await downloadSinglePng();
+      return;
     }
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = selectAllSlogans
-      ? "slogans.zip"
-      : `slogan-${selectedSloganVariant}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    // If "Select all" is enabled, create one ZIP per variant
+    for (const variant of sloganVariants) {
+      const zip = new JSZip();
 
-    setTimeout(() => URL.revokeObjectURL(a.href), 250);
+      for (const mode of ["fill", "outline"]) {
+        const folder = zip.folder(mode);
+        await exportVariant(mode, folder, variant);
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      downloadBlob(blob, `slogan-${variant}.zip`);
+    }
   } catch (err) {
     // The most common cause is running from file:// (fetch can't load local SVG files)
     const isFile = window.location?.protocol === "file:";
@@ -294,27 +341,41 @@ downloadBtn.onclick = async () => {
 };
 
 downloadPngBtn.onclick = async () => {
-  // When "Select all" is enabled, the preview contains multiple SVGs.
-  // In that case, download the first one as a convenience.
+  // If "Select all" is enabled, export ALL currently loaded previews as PNGs in a ZIP.
+  if (selectAllSlogans) {
+    if (typeof JSZip === "undefined") {
+      alert(
+        "ZIP download library (JSZip) failed to load, so I can't bundle multiple PNGs. Try the ZIP button, or check your network."
+      );
+      return;
+    }
+
+    if (!svgs.length) return;
+
+    const zip = new JSZip();
+    const folder = zip.folder(selectedValue);
+
+    for (const item of svgs) {
+      if (!item?.svgEl) continue;
+      const pngBlob = await svgToPng(item.svgEl);
+      if (!pngBlob) continue;
+      folder.file(`${item.name}.png`, pngBlob);
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    downloadBlob(blob, `slogans-${selectedValue}-pngs.zip`);
+    return;
+  }
+
+  // Single-slogan mode: download one PNG directly.
   const first = svgs[0];
   if (!first?.svgEl) return;
 
   const pngBlob = await svgToPng(first.svgEl);
   if (!pngBlob) return;
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(pngBlob);
-
-  const baseName = selectAllSlogans
-    ? `${first.name}-${first.mode}`
-    : `slogan-${first.mode}_${selectedSloganVariant}`;
-  a.download = `${baseName}.png`;
-
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  setTimeout(() => URL.revokeObjectURL(a.href), 250);
+  const baseName = `slogan-${first.mode}_${selectedSloganVariant}`;
+  downloadBlob(pngBlob, `${baseName}.png`);
 };
 
 async function exportMode(mode, folder) {
