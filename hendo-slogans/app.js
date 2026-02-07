@@ -20,7 +20,13 @@ let selectAllSlogans = true;
 let selectedSloganVariant = "galaxy";
 let sloganTooltipTimer = null;
 
-const sloganVariants = ["galaxy", "intergalactic", "magic-power", "next-level"];
+const sloganVariants = 
+["galaxy", "intergalactic", "magic-power", "next-level", "mind-over-metter", "my-magical-power", 
+  "imagination", "dream", "dreams-to-reality", "hidden power", "unlock-potential", "aim-for-the-stars",
+   "believe-in-yourself", "destined-for-greatness", "envision-beauty", "cloudy","cloudy-vision",
+   "cloud-company","sea-of-clouds","clear-skies", "beautiful-clouds", "synchronicity", "very-special",
+  "special","mind-body-spirit", "rare", "on-of-a-kind", "from-the-heart", "from-the-bottom-of-the-heart",
+"alchemy", "chicago-to-tokyo","neon-lights", "designed-to-win", "purpose"];
 
 /* base filenames (fill template) */
 const slogans = sloganVariants.map(v => `slogan-fill_${v}.svg`);
