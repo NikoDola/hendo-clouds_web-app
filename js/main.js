@@ -542,8 +542,8 @@ function downloadPNG() {
         const width = Number.isFinite(wAttr) ? wAttr : (Number.isFinite(vbW) ? vbW : img.width || 1399.8);
         const height = Number.isFinite(hAttr) ? hAttr : (Number.isFinite(vbH) ? vbH : img.height || 1400);
 
-        // 2x export for sharper PNGs
-        const scale = 2;
+        // 4x export for sharper PNGs
+        const scale = 4;
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(width * scale);
         canvas.height = Math.round(height * scale);

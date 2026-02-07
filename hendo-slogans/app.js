@@ -291,18 +291,27 @@ async function exportVariant(mode, folder, variant) {
   if (pngBlob) folder.file(file.replace(".svg", ".png"), pngBlob);
 }
 
-async function exportVariantToFolder(variantFolder, variant) {
+async function exportVariantToFolder(zip, variant) {
   // Put everything under a slogan-named folder:
   // <variant>/fill.svg, fill.png, outline.svg, outline.png
-  if (!variantFolder) throw new Error(`Failed to create zip folder for: ${variant}`);
+  let variantFolder = null;
+  const missing = [];
 
   for (const mode of ["fill", "outline"]) {
     const file = getFileForVariant(mode, variant);
     const url = `./slogans/${mode}/${file}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch ${url} (${res.status})`);
-    const svgText = await res.text();
 
+    if (!res.ok) {
+      // Many slogans only exist as "fill" right now; skip missing files instead of failing the whole ZIP.
+      if (res.status === 404) {
+        missing.push(`${mode}`);
+        continue;
+      }
+      throw new Error(`Failed to fetch ${url} (${res.status})`);
+    }
+
+    const svgText = await res.text();
     const wrapper = document.createElement("div");
     wrapper.innerHTML = svgText.trim();
     const svgEl = wrapper.querySelector("svg");
@@ -311,12 +320,17 @@ async function exportVariantToFolder(variantFolder, variant) {
     normalizeSvg(svgEl);
     recolorSingle(svgEl);
 
+    if (!variantFolder) variantFolder = zip.folder(variant);
+    if (!variantFolder) throw new Error(`Failed to create zip folder for: ${variant}`);
+
     const svgStr = new XMLSerializer().serializeToString(svgEl);
     variantFolder.file(`${mode}.svg`, svgStr);
 
     const pngBlob = await svgToPng(svgEl);
     if (pngBlob) variantFolder.file(`${mode}.png`, pngBlob);
   }
+
+  return { exported: !!variantFolder, missing };
 }
 
 downloadBtn.onclick = async () => {
@@ -337,9 +351,13 @@ downloadBtn.onclick = async () => {
       ? sloganVariants
       : [selectedSloganVariant];
 
+    const skipped = [];
+    const partial = [];
+
     for (const variant of variantsToExport) {
-      const variantFolder = zip.folder(variant);
-      await exportVariantToFolder(variantFolder, variant);
+      const { exported, missing } = await exportVariantToFolder(zip, variant);
+      if (!exported) skipped.push(variant);
+      else if (missing.length) partial.push({ variant, missing });
     }
 
     const blob = await zip.generateAsync({ type: "blob" });
@@ -347,6 +365,21 @@ downloadBtn.onclick = async () => {
       ? "slogans-svg+png.zip"
       : `slogan-${selectedSloganVariant}-svg+png.zip`;
     downloadBlob(blob, filename);
+
+    // Optional heads-up (don't block download)
+    if (selectAllSlogans && (skipped.length || partial.length)) {
+      const partialText = partial.length
+        ? `\n\nSome slogans were missing files:\n` +
+          partial.slice(0, 8).map(p => `- ${p.variant}: missing ${p.missing.join(", ")}`).join("\n") +
+          (partial.length > 8 ? `\n...and ${partial.length - 8} more` : "")
+        : "";
+      const skippedText = skipped.length
+        ? `\n\nSome slogans had no files at all and were skipped:\n` +
+          skipped.slice(0, 8).map(s => `- ${s}`).join("\n") +
+          (skipped.length > 8 ? `\n...and ${skipped.length - 8} more` : "")
+        : "";
+      alert(`Export completed, but not everything existed in both modes.${partialText}${skippedText}`);
+    }
   } catch (err) {
     // The most common cause is running from file:// (fetch can't load local SVG files)
     const isFile = window.location?.protocol === "file:";
@@ -468,7 +501,8 @@ function recolorSingle(svgEl) {
 /* ============================= */
 /* SVG → PNG */
 /* ============================= */
-function svgToPng(svgEl) {
+function svgToPng(svgEl, options = {}) {
+  const scale = Number.isFinite(options.scale) ? options.scale : 4;
   return new Promise(resolve => {
     const svgStr = new XMLSerializer().serializeToString(svgEl);
     const img = new Image();
@@ -495,9 +529,13 @@ function svgToPng(svgEl) {
         ? img.height
         : (Number.isFinite(vbH) ? vbH : 512);
 
-      canvas.width = Math.round(width);
-      canvas.height = Math.round(height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(b => {
         resolve(b);
         URL.revokeObjectURL(url);
