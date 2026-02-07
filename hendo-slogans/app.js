@@ -291,15 +291,32 @@ async function exportVariant(mode, folder, variant) {
   if (pngBlob) folder.file(file.replace(".svg", ".png"), pngBlob);
 }
 
-async function downloadSinglePng() {
-  const first = svgs[0];
-  if (!first?.svgEl) return;
+async function exportVariantToFolder(variantFolder, variant) {
+  // Put everything under a slogan-named folder:
+  // <variant>/fill.svg, fill.png, outline.svg, outline.png
+  if (!variantFolder) throw new Error(`Failed to create zip folder for: ${variant}`);
 
-  const pngBlob = await svgToPng(first.svgEl);
-  if (!pngBlob) return;
+  for (const mode of ["fill", "outline"]) {
+    const file = getFileForVariant(mode, variant);
+    const url = `./slogans/${mode}/${file}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url} (${res.status})`);
+    const svgText = await res.text();
 
-  const filename = `slogan-${selectedValue}_${selectedSloganVariant}.png`;
-  downloadBlob(pngBlob, filename);
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = svgText.trim();
+    const svgEl = wrapper.querySelector("svg");
+    if (!svgEl) throw new Error(`Invalid SVG file: ${url}`);
+
+    normalizeSvg(svgEl);
+    recolorSingle(svgEl);
+
+    const svgStr = new XMLSerializer().serializeToString(svgEl);
+    variantFolder.file(`${mode}.svg`, svgStr);
+
+    const pngBlob = await svgToPng(svgEl);
+    if (pngBlob) variantFolder.file(`${mode}.png`, pngBlob);
+  }
 }
 
 downloadBtn.onclick = async () => {
@@ -311,32 +328,37 @@ downloadBtn.onclick = async () => {
   }
 
   try {
-    // If user picked a single slogan, just download a single PNG (simpler UX)
-    if (!selectAllSlogans) {
-      await downloadSinglePng();
-      return;
+    // Always generate ONE zip:
+    // - select all: zip contains <variant>/fill.* + outline.*
+    // - single: zip contains <variant>/fill.* + outline.*
+    const zip = new JSZip();
+
+    const variantsToExport = selectAllSlogans
+      ? sloganVariants
+      : [selectedSloganVariant];
+
+    for (const variant of variantsToExport) {
+      const variantFolder = zip.folder(variant);
+      await exportVariantToFolder(variantFolder, variant);
     }
 
-    // If "Select all" is enabled, create one ZIP per variant
-    for (const variant of sloganVariants) {
-      const zip = new JSZip();
-
-      for (const mode of ["fill", "outline"]) {
-        const folder = zip.folder(mode);
-        await exportVariant(mode, folder, variant);
-      }
-
-      const blob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(blob, `slogan-${variant}.zip`);
-    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const filename = selectAllSlogans
+      ? "slogans-svg+png.zip"
+      : `slogan-${selectedSloganVariant}-svg+png.zip`;
+    downloadBlob(blob, filename);
   } catch (err) {
     // The most common cause is running from file:// (fetch can't load local SVG files)
     const isFile = window.location?.protocol === "file:";
     const hint = isFile
       ? "\n\nIt looks like you're opening this page from your file system. The ZIP export needs a local web server so it can fetch the SVG files.\nTry: run a local server in the repo (e.g. VS Code/Live Server) and open http://localhost/..."
       : "";
-    alert(`ZIP export failed.${hint}`);
-    console.error(err);
+    const message =
+      err && typeof err === "object" && "message" in err
+        ? String(err.message)
+        : String(err);
+    alert(`ZIP export failed: ${message}${hint}`);
+    console.error("ZIP export failed:", err);
   }
 };
 
