@@ -7,34 +7,75 @@ const downloadPngBtn = document.getElementById("downloadPng");
 const colorListEl = document.getElementById("colorList");
 const colorCountEl = document.getElementById("colorCount");
 const selectCategory = document.getElementById("select-category");
-const selectAllSlogansEl = document.getElementById("select-all-slogans");
-const selectSloganEl = document.getElementById("select-slogan");
-const selectSloganWrapEl = document.getElementById("select-slogan-wrap");
-const selectSloganOverlayEl = document.getElementById("select-slogan-overlay");
+const selectFontEl = document.getElementById("select-font");
+const uniqueSearchEl = document.getElementById("unique-search");
+const sloganUniquesWrapEl = document.getElementById("slogan-uniques-wrap");
+const resetFiltersBtn = document.getElementById("reset-filters");
 const sloganTooltipEl = document.getElementById("slogan-tooltip");
 
 /* state */
-let selectedValue = "fill";
+let selectedValue = "all"; // all | fill | outline
+let selectedFont = "all"; // all | <font>
+let uniqueSearch = "";
 let colors = ["#ffffff"];
 let svgs = [];
-let selectAllSlogans = true;
-let selectedSloganVariant = "galaxy";
+/** Unique names temporarily hidden from the list (not deleted). */
+let excludedUniques = new Set();
 let sloganTooltipTimer = null;
 
-const sloganVariants = 
-["galaxy", "intergalactic", "magic-power", "next-level", "mind-over-metter", "my-magical-power", 
-  "imagination", "dream", "dreams-to-reality", "hidden power", "unlock-potential", "aim-for-the-stars",
-   "believe-in-yourself", "destined-for-greatness", "envision-beauty", "cloudy","cloudy-vision",
-   "cloud-company","sea-of-clouds","clear-skies", "beautiful-clouds", "synchronicity", "very-special",
-  "special","mind-body-spirit", "rare", "on-of-a-kind", "from-the-heart", "from-the-bottom-of-the-heart",
-"alchemy", "chicago-to-tokyo","neon-lights", "designed-to-win", "purpose"];
+/* data from slogans/manifest.json */
+let sloganFiles = []; // array of filenames (strings)
+let sloganItems = []; // parsed items
 
-/* base filenames (fill template) */
-const slogans = sloganVariants.map(v => `slogan-fill_${v}.svg`);
+function parseSloganFilename(filename) {
+  // Expected:
+  // - slogan-fill_<font>_<unique>.svg
+  // - slogan-outline_<font>_<unique>.svg
+  // NOTE: <unique> itself may contain underscores; we join the rest back.
+  const base = String(filename || "");
+  const m = base.match(/^slogan-(fill|outline)_(.+)\.svg$/i);
+  if (!m) return null;
 
-function getFilesForMode(mode) {
-  if (selectAllSlogans) return slogans.map(f => f.replace("fill", mode));
-  return [`slogan-${mode}_${selectedSloganVariant}.svg`];
+  const mode = m[1].toLowerCase();
+  const rest = m[2]; // <font>_<unique>
+  const parts = rest.split("_");
+  const font = (parts.shift() || "").trim();
+  const unique = parts.join("_").trim();
+  if (!font) return null;
+
+  return { filename: base, mode, font, unique };
+}
+
+function naturalLabelFromItem(item) {
+  // Display the thing you actually want to search: the unique part
+  return (item.unique || item.filename)
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getFilteredItems() {
+  const fontOk = selectedFont === "all"
+    ? () => true
+    : (it) => it.font === selectedFont;
+
+  const modeOk = selectedValue === "all"
+    ? () => true
+    : (it) => it.mode === selectedValue;
+
+  const q = (uniqueSearch || "").trim().toLowerCase();
+  const textOk = !q
+    ? () => true
+    : (it) => (it.unique || "").toLowerCase().includes(q);
+
+  const notExcluded = (it) => !excludedUniques.has(it.unique);
+
+  return sloganItems.filter(it => fontOk(it) && modeOk(it) && textOk(it) && notExcluded(it));
+}
+
+function getFilesToLoad() {
+  const items = getFilteredItems();
+  return items.map(it => it.filename);
 }
 
 /* ============================= */
@@ -54,15 +95,16 @@ function normalizeSvg(svgEl) {
 /* ============================= */
 /* LOAD SVGs */
 /* ============================= */
-function loadSvgs(mode) {
+function loadSvgs() {
   preview.innerHTML = "";
   svgs = [];
 
-  const files = getFilesForMode(mode);
+  const files = getFilesToLoad();
+  if (!files.length) return;
 
   Promise.all(
     files.map(file =>
-      fetch(`./slogans/${mode}/${file}`).then(r => r.text())
+      fetch(`./slogans/${encodeURIComponent(file)}`).then(r => r.text())
     )
   ).then(results => {
     results.forEach((svgText, i) => {
@@ -76,10 +118,11 @@ function loadSvgs(mode) {
 
       preview.appendChild(svgEl);
 
+      const parsed = parseSloganFilename(files[i]);
       svgs.push({
         name: files[i].replace(".svg", ""),
         svgEl,
-        mode
+        mode: parsed?.mode || "fill"
       });
     });
 
@@ -128,42 +171,40 @@ function showSloganTooltipAt(x, y, text) {
   }, 3000);
 }
 
-function updateSloganSelectLockUI() {
-  const locked = !!selectAllSlogans;
-  selectSloganEl.disabled = locked;
-  if (selectSloganWrapEl) {
-    selectSloganWrapEl.classList.toggle("isDisabled", locked);
-  }
-  if (!locked) hideSloganTooltip();
-}
-
 /* ============================= */
 /* SELECT CHANGE */
 /* ============================= */
 selectCategory.addEventListener("change", () => {
   selectedValue = selectCategory.value;
-  loadSvgs(selectedValue);
+  renderUniqueChips();
+  loadSvgs();
 });
 
-selectAllSlogansEl.addEventListener("change", () => {
-  selectAllSlogans = !!selectAllSlogansEl.checked;
-  updateSloganSelectLockUI();
-  loadSvgs(selectedValue);
-});
+if (selectFontEl) {
+  selectFontEl.addEventListener("change", () => {
+    selectedFont = selectFontEl.value;
+    renderUniqueChips();
+    loadSvgs();
+  });
+}
 
-selectSloganEl.addEventListener("change", () => {
-  selectedSloganVariant = selectSloganEl.value;
-  if (!selectAllSlogans) loadSvgs(selectedValue);
-});
+if (uniqueSearchEl) {
+  uniqueSearchEl.addEventListener("input", () => {
+    uniqueSearch = uniqueSearchEl.value || "";
+    renderUniqueChips();
+    loadSvgs();
+  });
+}
 
-if (selectSloganOverlayEl) {
-  selectSloganOverlayEl.addEventListener("click", e => {
-    if (!selectAllSlogans) return;
-    showSloganTooltipAt(
-      e.clientX,
-      e.clientY,
-      "You need to uncheck “Select all” so you can select a specific slogan."
-    );
+if (resetFiltersBtn) {
+  resetFiltersBtn.addEventListener("click", () => {
+    excludedUniques.clear();
+    if (uniqueSearchEl) {
+      uniqueSearchEl.value = "";
+      uniqueSearch = "";
+    }
+    renderUniqueChips();
+    loadSvgs();
   });
 }
 
@@ -266,12 +307,19 @@ function downloadBlob(blob, filename) {
 }
 
 function getFileForVariant(mode, variant) {
+  // Legacy helper (kept for safety). New logic uses filenames directly.
   return `slogan-${mode}_${variant}.svg`;
 }
 
-async function exportVariant(mode, folder, variant) {
-  const file = getFileForVariant(mode, variant);
-  const url = `./slogans/${mode}/${file}`;
+function getNiceBaseNameFromFilename(filename) {
+  const item = parseSloganFilename(filename);
+  if (!item) return filename.replace(/\.svg$/i, "");
+  const safeUnique = (item.unique || "slogan").trim();
+  return `slogan-${item.mode}_${item.font}_${safeUnique}`;
+}
+
+async function exportFileToZip(zipFolder, filename) {
+  const url = `./slogans/${encodeURIComponent(filename)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${url} (${res.status})`);
   const svgText = await res.text();
@@ -285,52 +333,13 @@ async function exportVariant(mode, folder, variant) {
   recolorSingle(svgEl);
 
   const svgStr = new XMLSerializer().serializeToString(svgEl);
-  folder.file(file, svgStr);
+  zipFolder.file(filename, svgStr);
 
   const pngBlob = await svgToPng(svgEl);
-  if (pngBlob) folder.file(file.replace(".svg", ".png"), pngBlob);
-}
-
-async function exportVariantToFolder(zip, variant) {
-  // Put everything under a slogan-named folder:
-  // <variant>/fill.svg, fill.png, outline.svg, outline.png
-  let variantFolder = null;
-  const missing = [];
-
-  for (const mode of ["fill", "outline"]) {
-    const file = getFileForVariant(mode, variant);
-    const url = `./slogans/${mode}/${file}`;
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      // Many slogans only exist as "fill" right now; skip missing files instead of failing the whole ZIP.
-      if (res.status === 404) {
-        missing.push(`${mode}`);
-        continue;
-      }
-      throw new Error(`Failed to fetch ${url} (${res.status})`);
-    }
-
-    const svgText = await res.text();
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = svgText.trim();
-    const svgEl = wrapper.querySelector("svg");
-    if (!svgEl) throw new Error(`Invalid SVG file: ${url}`);
-
-    normalizeSvg(svgEl);
-    recolorSingle(svgEl);
-
-    if (!variantFolder) variantFolder = zip.folder(variant);
-    if (!variantFolder) throw new Error(`Failed to create zip folder for: ${variant}`);
-
-    const svgStr = new XMLSerializer().serializeToString(svgEl);
-    variantFolder.file(`${mode}.svg`, svgStr);
-
-    const pngBlob = await svgToPng(svgEl);
-    if (pngBlob) variantFolder.file(`${mode}.png`, pngBlob);
+  if (pngBlob) {
+    const base = getNiceBaseNameFromFilename(filename);
+    zipFolder.file(`${base}.png`, pngBlob);
   }
-
-  return { exported: !!variantFolder, missing };
 }
 
 downloadBtn.onclick = async () => {
@@ -342,44 +351,23 @@ downloadBtn.onclick = async () => {
   }
 
   try {
-    // Always generate ONE zip:
-    // - select all: zip contains <variant>/fill.* + outline.*
-    // - single: zip contains <variant>/fill.* + outline.*
     const zip = new JSZip();
 
-    const variantsToExport = selectAllSlogans
-      ? sloganVariants
-      : [selectedSloganVariant];
+    const filesToExport = getFilesToLoad();
+    if (!filesToExport.length) return;
 
-    const skipped = [];
-    const partial = [];
+    const folder = zip.folder("slogans");
+    if (!folder) throw new Error("Failed to create zip folder");
 
-    for (const variant of variantsToExport) {
-      const { exported, missing } = await exportVariantToFolder(zip, variant);
-      if (!exported) skipped.push(variant);
-      else if (missing.length) partial.push({ variant, missing });
+    for (const filename of filesToExport) {
+      await exportFileToZip(folder, filename);
     }
 
     const blob = await zip.generateAsync({ type: "blob" });
-    const filename = selectAllSlogans
+    const zipName = filesToExport.length > 1
       ? "slogans-svg+png.zip"
-      : `slogan-${selectedSloganVariant}-svg+png.zip`;
-    downloadBlob(blob, filename);
-
-    // Optional heads-up (don't block download)
-    if (selectAllSlogans && (skipped.length || partial.length)) {
-      const partialText = partial.length
-        ? `\n\nSome slogans were missing files:\n` +
-          partial.slice(0, 8).map(p => `- ${p.variant}: missing ${p.missing.join(", ")}`).join("\n") +
-          (partial.length > 8 ? `\n...and ${partial.length - 8} more` : "")
-        : "";
-      const skippedText = skipped.length
-        ? `\n\nSome slogans had no files at all and were skipped:\n` +
-          skipped.slice(0, 8).map(s => `- ${s}`).join("\n") +
-          (skipped.length > 8 ? `\n...and ${skipped.length - 8} more` : "")
-        : "";
-      alert(`Export completed, but not everything existed in both modes.${partialText}${skippedText}`);
-    }
+      : `${getNiceBaseNameFromFilename(filesToExport[0])}-svg+png.zip`;
+    downloadBlob(blob, zipName);
   } catch (err) {
     // The most common cause is running from file:// (fetch can't load local SVG files)
     const isFile = window.location?.protocol === "file:";
@@ -396,8 +384,7 @@ downloadBtn.onclick = async () => {
 };
 
 downloadPngBtn.onclick = async () => {
-  // If "Select all" is enabled, export ALL currently loaded previews as PNGs in a ZIP.
-  if (selectAllSlogans) {
+  if (svgs.length > 1) {
     if (typeof JSZip === "undefined") {
       alert(
         "ZIP download library (JSZip) failed to load, so I can't bundle multiple PNGs. Try the ZIP button, or check your network."
@@ -408,17 +395,19 @@ downloadPngBtn.onclick = async () => {
     if (!svgs.length) return;
 
     const zip = new JSZip();
-    const folder = zip.folder(selectedValue);
+    const folder = zip.folder("png");
 
     for (const item of svgs) {
       if (!item?.svgEl) continue;
       const pngBlob = await svgToPng(item.svgEl);
       if (!pngBlob) continue;
-      folder.file(`${item.name}.png`, pngBlob);
+      const filename = `${item.name}.svg`;
+      const base = getNiceBaseNameFromFilename(filename);
+      folder.file(`${base}.png`, pngBlob);
     }
 
     const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, `slogans-${selectedValue}-pngs.zip`);
+    downloadBlob(blob, "slogans-pngs.zip");
     return;
   }
 
@@ -429,38 +418,9 @@ downloadPngBtn.onclick = async () => {
   const pngBlob = await svgToPng(first.svgEl);
   if (!pngBlob) return;
 
-  const baseName = `slogan-${first.mode}_${selectedSloganVariant}`;
+  const baseName = getNiceBaseNameFromFilename(`${first.name}.svg`);
   downloadBlob(pngBlob, `${baseName}.png`);
 };
-
-async function exportMode(mode, folder) {
-  const files = getFilesForMode(mode);
-
-  for (let i = 0; i < files.length; i++) {
-    const url = `./slogans/${mode}/${files[i]}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${url} (${res.status})`);
-    }
-    const svgText = await res.text();
-
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = svgText.trim();
-    const svgEl = wrapper.querySelector("svg");
-    if (!svgEl) throw new Error(`Invalid SVG file: ${url}`);
-
-    normalizeSvg(svgEl);
-    recolorSingle(svgEl);
-
-    const svgStr = new XMLSerializer().serializeToString(svgEl);
-    folder.file(files[i], svgStr);
-
-    const pngBlob = await svgToPng(svgEl);
-    if (pngBlob) {
-      folder.file(files[i].replace(".svg", ".png"), pngBlob);
-    }
-  }
-}
 
 function recolorSingle(svgEl) {
   svgEl.querySelectorAll("defs").forEach(d => d.remove());
@@ -554,24 +514,80 @@ function svgToPng(svgEl, options = {}) {
 /* ============================= */
 /* INIT */
 /* ============================= */
-function initSloganSelector() {
-  selectSloganEl.innerHTML = "";
+function renderFontSelect() {
+  if (!selectFontEl) return;
+  const fonts = Array.from(new Set(sloganItems.map(it => it.font))).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
 
-  sloganVariants.forEach(v => {
+  const prev = selectedFont;
+  selectFontEl.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "all";
+  optAll.textContent = "All fonts";
+  selectFontEl.appendChild(optAll);
+
+  fonts.forEach(f => {
     const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v.replace(/-/g, " ");
-    selectSloganEl.appendChild(opt);
+    opt.value = f;
+    opt.textContent = f;
+    selectFontEl.appendChild(opt);
   });
 
-  // set defaults
-  selectAllSlogansEl.checked = true;
-  selectAllSlogans = true;
-  selectedSloganVariant = sloganVariants[0];
-  selectSloganEl.value = selectedSloganVariant;
-  updateSloganSelectLockUI();
+  // restore selection if possible
+  selectedFont = fonts.includes(prev) ? prev : "all";
+  selectFontEl.value = selectedFont;
 }
 
-initSloganSelector();
+function renderUniqueChips() {
+  if (!sloganUniquesWrapEl) return;
+  sloganUniquesWrapEl.innerHTML = "";
+
+  const items = getFilteredItems();
+  const uniques = [...new Set(items.map(it => it.unique))].sort((a, b) =>
+    (a || "").localeCompare(b || "", undefined, { sensitivity: "base" })
+  );
+
+  uniques.forEach(unique => {
+    const chip = document.createElement("span");
+    chip.className = "sloganUniqueChip";
+    chip.textContent = (unique || "").replace(/-/g, " ");
+    const xBtn = document.createElement("button");
+    xBtn.type = "button";
+    xBtn.className = "chipRemove";
+    xBtn.setAttribute("aria-label", "Remove from list");
+    xBtn.textContent = "×";
+    xBtn.onclick = () => {
+      excludedUniques.add(unique);
+      renderUniqueChips();
+      loadSvgs();
+    };
+    chip.appendChild(xBtn);
+    sloganUniquesWrapEl.appendChild(chip);
+  });
+}
+
+async function initSlogansFromManifest() {
+  const res = await fetch("./slogans/manifest.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load slogans/manifest.json (${res.status})`);
+  sloganFiles = await res.json();
+  if (!Array.isArray(sloganFiles)) throw new Error("manifest.json must be an array of filenames");
+
+  sloganItems = sloganFiles
+    .map(parseSloganFilename)
+    .filter(Boolean);
+
+  renderFontSelect();
+  renderUniqueChips();
+}
+
 renderColors();
-loadSvgs(selectedValue);
+initSlogansFromManifest()
+  .then(() => loadSvgs())
+  .catch(err => {
+    console.error("Failed to init slogans:", err);
+    alert(
+      "Failed to load slogans manifest. Make sure you are running a local web server (not file://) and that slogans/manifest.json exists."
+    );
+  });

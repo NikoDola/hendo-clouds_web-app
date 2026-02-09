@@ -22,25 +22,29 @@
         </div>
 
         <div class="row">
+          <label for="select-font">Font</label>
+          <select id="select-font"></select>
+        </div>
+
+        <div class="row">
           <label for="select-category">Style</label>
           <select id="select-category">
-            <option value="fill" selected>Fill</option>
+            <option value="all" selected>All</option>
+            <option value="fill">Fill</option>
             <option value="outline">Outline</option>
           </select>
         </div>
 
         <div class="row">
-          <label for="select-slogan">Slogan</label>
-          <div class="sloganControl">
-            <div id="select-slogan-wrap" class="selectWrap">
-              <select id="select-slogan"></select>
-              <div id="select-slogan-overlay" class="selectOverlay" aria-hidden="true"></div>
-            </div>
+          <label for="unique-search">Search</label>
+          <input id="unique-search" type="text" placeholder="Search unique name…" />
+        </div>
 
-            <label class="checkboxLine">
-              <input id="select-all-slogans" type="checkbox" checked />
-              <span class="hint">Select all</span>
-            </label>
+        <div class="row sloganRow">
+          <label>Slogan</label>
+          <div class="sloganControl">
+            <div id="slogan-uniques-wrap" class="sloganUniquesWrap" aria-label="Slogan uniques"></div>
+            <button id="reset-filters" type="button" class="resetFiltersBtn">Reset filters</button>
           </div>
         </div>
       </div>
