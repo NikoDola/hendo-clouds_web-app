@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>T.HENDO — Branding Post Creator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -140,13 +137,20 @@
           </div>
 
           <div class="ctrl-row">
-            <span class="ctrl-label">Font</span>
-            <select id="fontSelect" class="ctrl-select">
-              <option value="LemonMilk">Lemon Milk</option>
-              <option value="Rajdhani">Rajdhani</option>
-              <option value="'Exo 2'">Exo 2</option>
-              <option value="Arial">Arial</option>
-              <option value="Georgia">Georgia</option>
+            <span class="ctrl-label">Font Weight</span>
+            <select id="fontWeightSelect" class="ctrl-select">
+              <option value="300">Light</option>
+              <option value="400" selected>Regular</option>
+              <option value="500">Medium</option>
+              <option value="700">Bold</option>
+            </select>
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-label">Font Style</span>
+            <select id="fontStyleSelect" class="ctrl-select">
+              <option value="normal" selected>Normal</option>
+              <option value="italic">Italic</option>
             </select>
           </div>
 
