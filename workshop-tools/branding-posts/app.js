@@ -287,8 +287,10 @@ function spawnEdge(randomInit) {
     return { x: rand(-20, 0), y: rand(0, cH * 0.8), vx: 1, vy: 1 };
   if (edge === "right")
     return { x: rand(cW, cW + 20), y: rand(0, cH * 0.8), vx: -1, vy: 1 };
-  // top — always left-down, matching the original ParallaxStars behaviour
-  return { x: rand(0, cW), y: -20, vx: -1, vy: 1 };
+
+  // top — choose left-down or right-down for variety when all-sides is active
+  const topVx = dropMode === "all" ? (Math.random() > 0.5 ? -1 : 1) : -1;
+  return { x: rand(0, cW), y: -20, vx: topVx, vy: 1 };
 }
 
 function makeShoot(randomInit, idx) {
