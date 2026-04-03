@@ -418,11 +418,15 @@ function drawText() {
 
   const lines = wrappedLines.length ? wrappedLines : [""];
   const lineH = px * 1.3;
-  const blockH = lines.filter((line) => line.trim() !== "").length * lineH || lineH;
+  const blockH =
+    lines.filter((line) => line.trim() !== "").length * lineH || lineH;
   const desiredBaseY = (S.cH * S.textPosY) / 100 - blockH / 2 + lineH / 2;
   const minBaseY = 50 + lineH / 2;
   const maxBaseY = S.cH - 50 - blockH + lineH / 2;
-  const baseY = Math.min(Math.max(desiredBaseY, minBaseY), Math.max(minBaseY, maxBaseY));
+  const baseY = Math.min(
+    Math.max(desiredBaseY, minBaseY),
+    Math.max(minBaseY, maxBaseY),
+  );
 
   lines.forEach((line, i) => {
     if (!line.trim()) return;
