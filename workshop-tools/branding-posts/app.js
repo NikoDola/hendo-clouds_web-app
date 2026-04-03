@@ -372,10 +372,57 @@ function drawText() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  const lines = S.text.split("\n");
+  const maxWidth = S.cW - 100;
+  const rawLines = S.text.split("\n");
+  const wrappedLines = [];
+
+  rawLines.forEach((raw) => {
+    if (!raw.trim()) {
+      wrappedLines.push("");
+      return;
+    }
+
+    const words = raw.split(" ");
+    let current = "";
+
+    words.forEach((word) => {
+      if (!word) return;
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width <= maxWidth) {
+        current = test;
+      } else {
+        if (current) wrappedLines.push(current);
+
+        if (ctx.measureText(word).width <= maxWidth) {
+          current = word;
+        } else {
+          let sub = word;
+          while (sub.length) {
+            let fit = "";
+            for (let i = 0; i < sub.length; i += 1) {
+              const tmp = sub.slice(0, i + 1);
+              if (ctx.measureText(tmp).width > maxWidth) break;
+              fit = tmp;
+            }
+            if (!fit) break;
+            wrappedLines.push(fit);
+            sub = sub.slice(fit.length);
+          }
+          current = "";
+        }
+      }
+    });
+
+    if (current) wrappedLines.push(current);
+  });
+
+  const lines = wrappedLines.length ? wrappedLines : [""];
   const lineH = px * 1.3;
-  const blockH = lines.length * lineH;
-  const baseY = (S.cH * S.textPosY) / 100 - blockH / 2 + lineH / 2;
+  const blockH = lines.filter((line) => line.trim() !== "").length * lineH || lineH;
+  const desiredBaseY = (S.cH * S.textPosY) / 100 - blockH / 2 + lineH / 2;
+  const minBaseY = 50 + lineH / 2;
+  const maxBaseY = S.cH - 50 - blockH + lineH / 2;
+  const baseY = Math.min(Math.max(desiredBaseY, minBaseY), Math.max(minBaseY, maxBaseY));
 
   lines.forEach((line, i) => {
     if (!line.trim()) return;
