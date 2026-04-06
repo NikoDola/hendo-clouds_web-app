@@ -278,18 +278,47 @@ function spawnEdge(randomInit) {
       : "top";
 
   if (randomInit) {
-    // Top-only keeps original left-down direction; all-sides uses random direction
-    const vx = dropMode === "all" ? (Math.random() > 0.5 ? -1 : 1) : -1;
-    return { x: rand(0, cW), y: rand(0, cH * 0.5), vx, vy: 1 };
+    // initial decoration stars: mimic active mode in / visible area.
+    if (dropMode === "top")
+      return { x: rand(0, cW), y: rand(0, cH * 0.5), vx: -1, vy: 1 };
+    if (dropMode === "sides") {
+      const fromLeft = Math.random() > 0.5;
+      return {
+        x: fromLeft ? rand(-20, 0) : rand(cW, cW + 20),
+        y: rand(0, cH * 0.8),
+        vx: fromLeft ? 1 : -1,
+        vy: 1,
+      };
+    }
+    // all: spawn from any edge, random top direction
+    const anyEdge = ["top", "left", "right"][Math.floor(Math.random() * 3)];
+    if (anyEdge === "left")
+      return { x: rand(-20, 0), y: rand(0, cH * 0.8), vx: 1, vy: 1 };
+    if (anyEdge === "right")
+      return { x: rand(cW, cW + 20), y: rand(0, cH * 0.8), vx: -1, vy: 1 };
+    return {
+      x: rand(0, cW),
+      y: rand(0, cH * 0.5),
+      vx: Math.random() > 0.5 ? -1 : 1,
+      vy: 1,
+    };
   }
 
+  if (dropMode === "top") return { x: rand(0, cW), y: -20, vx: -1, vy: 1 };
+
+  if (dropMode === "sides") {
+    if (Math.random() > 0.5)
+      return { x: rand(-20, 0), y: rand(0, cH * 0.8), vx: 1, vy: 1 };
+    return { x: rand(cW, cW + 20), y: rand(0, cH * 0.8), vx: -1, vy: 1 };
+  }
+
+  // all: may start from top / left / right
   if (edge === "left")
     return { x: rand(-20, 0), y: rand(0, cH * 0.8), vx: 1, vy: 1 };
   if (edge === "right")
     return { x: rand(cW, cW + 20), y: rand(0, cH * 0.8), vx: -1, vy: 1 };
 
-  // top — choose left-down or right-down for variety when all-sides is active
-  const topVx = dropMode === "all" ? (Math.random() > 0.5 ? -1 : 1) : -1;
+  const topVx = Math.random() > 0.5 ? -1 : 1;
   return { x: rand(0, cW), y: -20, vx: topVx, vy: 1 };
 }
 
