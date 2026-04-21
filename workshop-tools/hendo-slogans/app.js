@@ -21,6 +21,8 @@ let colors = ["#ffffff"];
 let svgs = [];
 /** Unique names temporarily hidden from the list (not deleted). */
 let excludedUniques = new Set();
+/** Selected slogan unique (null means show all filtered) */
+let selectedUnique = null;
 let sloganTooltipTimer = null;
 
 /* data from slogans/manifest.json */
@@ -55,13 +57,11 @@ function naturalLabelFromItem(item) {
 }
 
 function getFilteredItems() {
-  const fontOk = selectedFont === "all"
-    ? () => true
-    : (it) => it.font === selectedFont;
+  const fontOk =
+    selectedFont === "all" ? () => true : (it) => it.font === selectedFont;
 
-  const modeOk = selectedValue === "all"
-    ? () => true
-    : (it) => it.mode === selectedValue;
+  const modeOk =
+    selectedValue === "all" ? () => true : (it) => it.mode === selectedValue;
 
   const q = (uniqueSearch || "").trim().toLowerCase();
   const textOk = !q
@@ -70,12 +70,22 @@ function getFilteredItems() {
 
   const notExcluded = (it) => !excludedUniques.has(it.unique);
 
-  return sloganItems.filter(it => fontOk(it) && modeOk(it) && textOk(it) && notExcluded(it));
+  const selectedOk =
+    selectedUnique === null ? () => true : (it) => it.unique === selectedUnique;
+
+  return sloganItems.filter(
+    (it) =>
+      fontOk(it) &&
+      modeOk(it) &&
+      textOk(it) &&
+      notExcluded(it) &&
+      selectedOk(it),
+  );
 }
 
 function getFilesToLoad() {
   const items = getFilteredItems();
-  return items.map(it => it.filename);
+  return items.map((it) => it.filename);
 }
 
 /* ============================= */
@@ -83,10 +93,10 @@ function getFilesToLoad() {
 /* ============================= */
 function normalizeSvg(svgEl) {
   // remove embedded styles
-  svgEl.querySelectorAll("style").forEach(s => s.remove());
+  svgEl.querySelectorAll("style").forEach((s) => s.remove());
 
   // remove class & inline styles that override JS
-  svgEl.querySelectorAll("*").forEach(el => {
+  svgEl.querySelectorAll("*").forEach((el) => {
     el.removeAttribute("class");
     el.removeAttribute("style");
   });
@@ -103,10 +113,10 @@ function loadSvgs() {
   if (!files.length) return;
 
   Promise.all(
-    files.map(file =>
-      fetch(`./slogans/${encodeURIComponent(file)}`).then(r => r.text())
-    )
-  ).then(results => {
+    files.map((file) =>
+      fetch(`./slogans/${encodeURIComponent(file)}`).then((r) => r.text()),
+    ),
+  ).then((results) => {
     results.forEach((svgText, i) => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = svgText.trim();
@@ -122,7 +132,7 @@ function loadSvgs() {
       svgs.push({
         name: files[i].replace(".svg", ""),
         svgEl,
-        mode: parsed?.mode || "fill"
+        mode: parsed?.mode || "fill",
       });
     });
 
@@ -231,7 +241,7 @@ function renderColors() {
 
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "×";
-    removeBtn.onclick = e => {
+    removeBtn.onclick = (e) => {
       e.stopPropagation();
       colors.splice(index, 1);
       renderColors();
@@ -248,19 +258,19 @@ function renderColors() {
 /* ============================= */
 function recolorAll() {
   svgs.forEach(({ svgEl, mode }) => {
-    svgEl.querySelectorAll("defs").forEach(d => d.remove());
+    svgEl.querySelectorAll("defs").forEach((d) => d.remove());
 
     const shapes = svgEl.querySelectorAll(
-      "path, rect, circle, line, polyline, polygon"
+      "path, rect, circle, line, polyline, polygon",
     );
 
     if (colors.length === 0) {
-      shapes.forEach(el => el.setAttribute("fill", "#000000"));
+      shapes.forEach((el) => el.setAttribute("fill", "#000000"));
       return;
     }
 
     if (colors.length === 1) {
-      shapes.forEach(el => {
+      shapes.forEach((el) => {
         el.setAttribute("fill", colors[0]);
       });
       return;
@@ -268,7 +278,10 @@ function recolorAll() {
 
     /* vertical gradient */
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    const grad = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "linearGradient",
+    );
     const id = `grad-${Math.random().toString(36).slice(2)}`;
 
     grad.setAttribute("id", id);
@@ -278,7 +291,10 @@ function recolorAll() {
     grad.setAttribute("y2", "100%");
 
     colors.forEach((c, i) => {
-      const stop = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      const stop = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "stop",
+      );
       stop.setAttribute("offset", `${(i / (colors.length - 1)) * 100}%`);
       stop.setAttribute("stop-color", c);
       grad.appendChild(stop);
@@ -287,7 +303,7 @@ function recolorAll() {
     defs.appendChild(grad);
     svgEl.prepend(defs);
 
-    shapes.forEach(el => {
+    shapes.forEach((el) => {
       el.setAttribute("fill", `url(#${id})`);
     });
   });
@@ -345,7 +361,7 @@ async function exportFileToZip(zipFolder, filename) {
 downloadBtn.onclick = async () => {
   if (typeof JSZip === "undefined") {
     alert(
-      "ZIP download library (JSZip) failed to load. If you're offline or a network is blocked, PNG export can still work."
+      "ZIP download library (JSZip) failed to load. If you're offline or a network is blocked, PNG export can still work.",
     );
     return;
   }
@@ -364,9 +380,10 @@ downloadBtn.onclick = async () => {
     }
 
     const blob = await zip.generateAsync({ type: "blob" });
-    const zipName = filesToExport.length > 1
-      ? "slogans-svg+png.zip"
-      : `${getNiceBaseNameFromFilename(filesToExport[0])}-svg+png.zip`;
+    const zipName =
+      filesToExport.length > 1
+        ? "slogans-svg+png.zip"
+        : `${getNiceBaseNameFromFilename(filesToExport[0])}-svg+png.zip`;
     downloadBlob(blob, zipName);
   } catch (err) {
     // The most common cause is running from file:// (fetch can't load local SVG files)
@@ -387,7 +404,7 @@ downloadPngBtn.onclick = async () => {
   if (svgs.length > 1) {
     if (typeof JSZip === "undefined") {
       alert(
-        "ZIP download library (JSZip) failed to load, so I can't bundle multiple PNGs. Try the ZIP button, or check your network."
+        "ZIP download library (JSZip) failed to load, so I can't bundle multiple PNGs. Try the ZIP button, or check your network.",
       );
       return;
     }
@@ -423,19 +440,22 @@ downloadPngBtn.onclick = async () => {
 };
 
 function recolorSingle(svgEl) {
-  svgEl.querySelectorAll("defs").forEach(d => d.remove());
+  svgEl.querySelectorAll("defs").forEach((d) => d.remove());
 
   const shapes = svgEl.querySelectorAll(
-    "path, rect, circle, line, polyline, polygon"
+    "path, rect, circle, line, polyline, polygon",
   );
 
   if (colors.length === 1) {
-    shapes.forEach(el => el.setAttribute("fill", colors[0]));
+    shapes.forEach((el) => el.setAttribute("fill", colors[0]));
   }
 
   if (colors.length > 1) {
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    const grad = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "linearGradient",
+    );
     const id = "export-grad";
 
     grad.setAttribute("id", id);
@@ -445,7 +465,10 @@ function recolorSingle(svgEl) {
     grad.setAttribute("y2", "100%");
 
     colors.forEach((c, i) => {
-      const stop = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      const stop = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "stop",
+      );
       stop.setAttribute("offset", `${(i / (colors.length - 1)) * 100}%`);
       stop.setAttribute("stop-color", c);
       grad.appendChild(stop);
@@ -454,7 +477,7 @@ function recolorSingle(svgEl) {
     defs.appendChild(grad);
     svgEl.prepend(defs);
 
-    shapes.forEach(el => el.setAttribute("fill", `url(#${id})`));
+    shapes.forEach((el) => el.setAttribute("fill", `url(#${id})`));
   }
 }
 
@@ -463,7 +486,7 @@ function recolorSingle(svgEl) {
 /* ============================= */
 function svgToPng(svgEl, options = {}) {
   const scale = Number.isFinite(options.scale) ? options.scale : 4;
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const svgStr = new XMLSerializer().serializeToString(svgEl);
     const img = new Image();
     const canvas = document.createElement("canvas");
@@ -482,12 +505,18 @@ function svgToPng(svgEl, options = {}) {
       const vbW = vb.length === 4 ? vb[2] : NaN;
       const vbH = vb.length === 4 ? vb[3] : NaN;
 
-      const width = Number.isFinite(img.width) && img.width > 0
-        ? img.width
-        : (Number.isFinite(vbW) ? vbW : 512);
-      const height = Number.isFinite(img.height) && img.height > 0
-        ? img.height
-        : (Number.isFinite(vbH) ? vbH : 512);
+      const width =
+        Number.isFinite(img.width) && img.width > 0
+          ? img.width
+          : Number.isFinite(vbW)
+            ? vbW
+            : 512;
+      const height =
+        Number.isFinite(img.height) && img.height > 0
+          ? img.height
+          : Number.isFinite(vbH)
+            ? vbH
+            : 512;
 
       canvas.width = Math.round(width * scale);
       canvas.height = Math.round(height * scale);
@@ -496,7 +525,7 @@ function svgToPng(svgEl, options = {}) {
       ctx.imageSmoothingQuality = "high";
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(b => {
+      canvas.toBlob((b) => {
         resolve(b);
         URL.revokeObjectURL(url);
       });
@@ -516,8 +545,8 @@ function svgToPng(svgEl, options = {}) {
 /* ============================= */
 function renderFontSelect() {
   if (!selectFontEl) return;
-  const fonts = Array.from(new Set(sloganItems.map(it => it.font))).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" })
+  const fonts = Array.from(new Set(sloganItems.map((it) => it.font))).sort(
+    (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }),
   );
 
   const prev = selectedFont;
@@ -528,7 +557,7 @@ function renderFontSelect() {
   optAll.textContent = "All fonts";
   selectFontEl.appendChild(optAll);
 
-  fonts.forEach(f => {
+  fonts.forEach((f) => {
     const opt = document.createElement("option");
     opt.value = f;
     opt.textContent = f;
@@ -544,22 +573,46 @@ function renderUniqueChips() {
   if (!sloganUniquesWrapEl) return;
   sloganUniquesWrapEl.innerHTML = "";
 
+  // Get all items for display (ignore selectedUnique temporarily for list)
+  const tempSelected = selectedUnique;
+  selectedUnique = null;
   const items = getFilteredItems();
-  const uniques = [...new Set(items.map(it => it.unique))].sort((a, b) =>
-    (a || "").localeCompare(b || "", undefined, { sensitivity: "base" })
+  selectedUnique = tempSelected;
+
+  const uniques = [...new Set(items.map((it) => it.unique))].sort((a, b) =>
+    (a || "").localeCompare(b || "", undefined, { sensitivity: "base" }),
   );
 
-  uniques.forEach(unique => {
+  uniques.forEach((unique) => {
     const chip = document.createElement("span");
     chip.className = "sloganUniqueChip";
+    if (unique === selectedUnique) {
+      chip.classList.add("selected");
+    }
     chip.textContent = (unique || "").replace(/-/g, " ");
+
+    // Make chip clickable to select
+    chip.style.cursor = "pointer";
+    chip.onclick = (e) => {
+      if (e.target.classList.contains("chipRemove")) {
+        return; // Let the X button handle its own click
+      }
+      selectedUnique = selectedUnique === unique ? null : unique;
+      renderUniqueChips();
+      loadSvgs();
+    };
+
     const xBtn = document.createElement("button");
     xBtn.type = "button";
     xBtn.className = "chipRemove";
     xBtn.setAttribute("aria-label", "Remove from list");
     xBtn.textContent = "×";
-    xBtn.onclick = () => {
+    xBtn.onclick = (e) => {
+      e.stopPropagation();
       excludedUniques.add(unique);
+      if (selectedUnique === unique) {
+        selectedUnique = null;
+      }
       renderUniqueChips();
       loadSvgs();
     };
@@ -570,13 +623,13 @@ function renderUniqueChips() {
 
 async function initSlogansFromManifest() {
   const res = await fetch("./slogans/manifest.json", { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load slogans/manifest.json (${res.status})`);
+  if (!res.ok)
+    throw new Error(`Failed to load slogans/manifest.json (${res.status})`);
   sloganFiles = await res.json();
-  if (!Array.isArray(sloganFiles)) throw new Error("manifest.json must be an array of filenames");
+  if (!Array.isArray(sloganFiles))
+    throw new Error("manifest.json must be an array of filenames");
 
-  sloganItems = sloganFiles
-    .map(parseSloganFilename)
-    .filter(Boolean);
+  sloganItems = sloganFiles.map(parseSloganFilename).filter(Boolean);
 
   renderFontSelect();
   renderUniqueChips();
@@ -585,9 +638,9 @@ async function initSlogansFromManifest() {
 renderColors();
 initSlogansFromManifest()
   .then(() => loadSvgs())
-  .catch(err => {
+  .catch((err) => {
     console.error("Failed to init slogans:", err);
     alert(
-      "Failed to load slogans manifest. Make sure you are running a local web server (not file://) and that slogans/manifest.json exists."
+      "Failed to load slogans manifest. Make sure you are running a local web server (not file://) and that slogans/manifest.json exists.",
     );
   });

@@ -154,6 +154,27 @@ h1 {
   border-radius: 999px;
   font-size: 12px;
   color: #eee;
+  transition: all 0.2s ease;
+}
+
+.sloganUniqueChip:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.sloganUniqueChip.selected {
+  background: #0d5cb8;
+  border-color: #1a7fd9;
+  color: #fff;
+}
+
+.sloganUniqueChip.selected .chipRemove {
+  background: #0a4a96;
+  color: #fff;
+}
+
+.sloganUniqueChip.selected .chipRemove:hover {
+  background: #0d5cb8;
 }
 
 .sloganUniqueChip .chipRemove {
